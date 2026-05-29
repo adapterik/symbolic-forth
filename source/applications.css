@@ -1,0 +1,21 @@
+@import "common.css";
+
+.applications {
+
+}
+
+.applications .menu {
+
+}
+
+.applications .menu .item {
+    margin: 1rem;
+}
+
+.applications .menu > .item > .link {
+    font-weight: bold;
+}
+
+.applications .menu > .item > .description {
+
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Testing | Symbolic FORTH</title>
+<link rel="stylesheet" href="testing.css">
+    <meta charset="utf-8">
+</head>
+<body>
+
+<div id="header">
+  <div id="title">
+    Testing
+  </div>
+  <div id="menu">
+     <a href="index.html">Home</a>
+     <a href="testing.html" class="selected">Testing</a>
+     <a href="programming.html">Programming</a>
+     <a href="applications.html">Applications</a>
+     <a href="manual.html">Manual</a>
+     <a href="about.html">About</a>
+  </div>
+  <div id="alert"></div>
+</div>
+
+<div id="testing">
+    <div class="buttons">
+      <button type="button" id="run-button">Run Tests</button>
+      <div class="button-field">
+        <div class="label">
+        Successes:
+        </div>
+        <div class="value" id="successes">-</div>
+      </div>
+      <div class="button-field">
+        <div class="label">
+          Failures:
+        </div>
+        <div class="value" id="failures">-</div>
+      </div>
+    </div>
+    <div class="results-table">
+      <div class="header">
+          <div class="col test-checkbox">
+            <button type="button">✓</button>
+          </div>
+        <div class="test">
+          Test
+        </div>
+        <div class="status">
+          Status
+        </div>
+        <div class="message">
+          Message
+        </div>
+      </div>
+      <div class="body"></div>
+    </div>
+</div>
+
+<hr style="margin-top: 3rem;" />
+
+<div id="feedback" class="feedback">
+  <div class="output-area">
+    <div class="title-area">
+      <div class="left-gadgets"></div>
+      <div class="title">Test Output</div>
+      <div class="right-gadgets"></div>
+    </div>
+    <div id="output" class="output"></div>
+  </div>
+  <div class="console-area">
+    <div class="title-area">
+      <div class="left-gadgets"></div>
+      <div class="title">Console Output</div>
+      <div class="right-gadgets"></div>
+    </div>
+    <div id="console" class="console"></div>
+  </div>
+</div>
+
+<div id="input">
+  <input name="code_input" id="code_input_field">
+  <button type="button" id="code_input_button">Run</button>
+</div>
+
+<hr />
+
+<script src="testing.js" type="module"></script>
+
+</body>
+
+</html>

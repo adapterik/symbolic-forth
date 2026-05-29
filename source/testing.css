@@ -1,0 +1,127 @@
+@import "/common.css";
+
+#testing {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    margin: 1rem;
+    padding: 1rem;
+    border: 1px silver solid;
+    border-radius: 0.5rem;
+}
+
+#testing > .buttons {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 1rem;
+}
+
+.buttons button + button {
+   margin-left: 0.5rem;
+}
+
+#testing > .buttons > .button-field {
+  flex: 0 0 auto;
+  border: 1px solid silver;
+  padding: 0.5rem;
+  margin-left: 0.5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.button-field > .label {
+   font-style: italic;
+   flex: 0 0 auto;
+   margin-right: 0.5rem;
+}
+
+.button-field > .value {
+    font-family: monospace;
+    font-size: 120%;
+    font-weight: bold;
+    flex: 0 0 3rem;
+}
+
+.results-table {
+   display: flex;
+   flex-direction: column;
+   flex: 1 1 0;
+}
+
+.results-table > .header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-style: italic;
+    overflow-y: scroll;
+    background-color: rgba(210, 210, 210, 0.3);
+}
+.results-table > .header > .test-checkbox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+.results-table  button {
+   padding: 0; margin: 2px; border-width: 2px;
+   flex: 1 1 0;
+}
+
+.results-table > .body {
+    flex: 1 1 0;
+    overflow-y: scroll;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0.5rem 0;
+}
+
+.results-table .row.test-set {
+    border: 1px solid silver;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0;
+    background-color: rgba(200, 200, 200, 0.5);
+}
+
+.results-table .test-set-checkbox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex: 0 0 2rem;
+    margin-right: 0.5rem;
+}
+
+.results-table .test-set {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.results-table .set {
+    flex: 3 1 0;
+}
+
+.results-table .test-checkbox {
+   flex: 0 0 2rem;
+   margin-right: 0.5rem;
+   display: flex;
+   flex-direction: row;
+   justify-content: center;
+}
+
+.results-table .test {
+   flex: 3 1 0;
+}
+
+.results-table .status {
+   flex: 1 1 0;
+}
+
+.results-table .message {
+   flex: 2 1 0;
+}

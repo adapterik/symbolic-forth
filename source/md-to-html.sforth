@@ -1,0 +1,351 @@
+VARIABLE abc
+
+
+" --------------------------" PRINTLN
+" Markdown to HTML Converter" PRINTLN
+" in Symbolic FORTH"          PRINTLN
+" --------------------------" PRINTLN
+" " PRINTLN
+
+( nope ) " yup"
+
+(
+In this simple markdown-to-html translator we use ua simple, restricted model
+of markdown.
+
+Each markdown block element is a single line of text. The first word of that
+line indicates the markdown formatting command. The rest of the line is the
+content, or the subject of the formatting command.
+
+One exception is the paragraph -- if the first word doees not correspond to
+a formatting command, the default paragraph formatting command is used, and
+the first word is joined with the rest of the line as the content.
+
+For example:
+
+# My Title
+
+is an H1 header with the content "My Title"
+
+In-line formatting is accompblished with a secondary process which inspects the
+content. This is a byte-by-byte process, in which a particular sequence of
+characters triggers a similar formatting context process, with a particular
+sequence of characters terminating it.
+
+E.g.
+
+This is a __paragraph__ of "text".
+
+In this case the initial __ triggers the "string" formatting context, ending
+with the second __, resulting in the word "paragraph" being displayed within
+the "strong" tag, like <strong>paragraph</strong>. The quoted "text" is just
+plain text because the double-quote " is not a formatting command.
+
+---------------------------------
+
+To run the formatter you need a javascript runtime installed. I use
+QuickJS, thus:
+
+qjs sf.js md-to-html.forth manual/intro.md
+
+---------------------------------
+
+See https://daringfireball.net/projects/markdown/
+
+)
+
+
+
+(
+
+input_file @ file::load VAR contents
+
+contents @ string::length VAR file_len
+
+A[ " File is " file_len @ "  bytes long" ] PRINTLN
+
+)
+
+
+( here is what we do:
+  begin loop
+    get the next word
+    if the word is recognized
+      run it
+    if the word is not, assume it is a paragraph
+      output the entire line as a paragraph
+  end loop
+  later we will implement in-line stuff
+)
+
+
+( ---------------------------------- )
+( Set up global variables            )
+( ---------------------------------- )
+
+( what was I thinking here? )
+null VAR line-context
+123
+
+( what is this for? )
+0 VAR content-position
+
+( ----------------------------------
+              Words
+ ---------------------------------- )
+
+    \ hello
+
+: header1
+
+  ~header1 line-context !
+
+  " <h1>" PRINT / this is a comment too...
+
+  ( echo rest of line to output )
+
+  VARIABLE blah
+
+  CHAR
+
+  " </h1>" PRINT
+
+  null line-context !
+;
+
+
+null VAR mode
+
+: set-mode
+  mode !
+;
+
+: start-list-mode
+  mode @ ~list
+;
+
+: ordered-list-start
+  ~ordered-list mode @ EQ NOT
+  IF
+    " = <ol>" PRINTLN
+    ~ordered-list mode !
+  THEN
+;
+
+: ordered-list-end
+  ~ordered-list mode @ EQ
+  IF
+    " = </ol>" PRINTLN
+    null mode !
+  THEN
+;
+
+: token-to-tag
+
+  DUP " #"    S= IF DROP " </H1>" " <H1>" EXIT THEN
+  DUP " ##"   S= IF DROP " </H2>" " <H2>" EXIT THEN
+  DUP " ###"  S= IF DROP " </H3>" " <H3>" EXIT THEN
+  DUP " ####" S= IF DROP " </H4>" " <H4>" EXIT THEN
+
+  \  " here?" println
+  \  " why not? " println
+  \  " size: " print dup string::length println
+  \  " string: " print dup println
+  \  " matches +:" print dup " +" S= println
+
+  DUP " +" S= IF DROP " </P>" " <P>" EXIT THEN
+
+  ( todo - a regex of sorts so we can detect any number and dot )
+  ( LEFT OFF HERE - we need to deal with "modes" - ordered list, unordered
+    list, table ... is that it?)
+
+  DUP " 1." S= IF DROP " </li>" " <li>" EXIT THEN
+  DUP " 2." S= IF DROP " </li>" " <li>" EXIT THEN
+  DUP " 3." S= IF DROP " </li>" " <li>" EXIT THEN
+  DUP " 4." S= IF DROP " </li>" " <li>" EXIT THEN
+  DUP " 5." S= IF DROP " </li>" " <li>" EXIT THEN
+
+
+  DUP " -" S= IF DROP " </li>" " <li>" EXIT THEN
+  DUP " *" S= IF DROP " </li>" " <li>"  EXIT THEN
+
+  ( default condition - a paragraph )
+  DROP
+  " </p>" " <p>"
+;
+
+10 stack::create VAR mode-stack
+
+null VAR mode
+
+: emit-h1-tag
+  " <H1>" PRINT
+  PRINT ( contents )
+  " </H1>" PRINTLN
+;
+
+: emit-h2-tag
+  " <H2>" PRINT
+  PRINT ( contents )
+  " </H2>" PRINTLN
+;
+
+: emit-h3-tag
+  " <H3>" PRINT
+  PRINT ( contents )
+  " </H3>" PRINTLN
+;
+
+: emit-h4-tag
+  " <H4>" PRINT
+  PRINT ( contents )
+  " </H4>" PRINTLN
+;
+
+: emit-p-tag
+  " <P>" PRINT
+  PRINT ( contents )
+  " </P>" PRINTLN
+;
+
+: emit-li-tag
+  " <LI>" PRINT
+  PRINT
+  " </LI>" PRINTLN
+;
+
+\  : emit-ul-li-tag
+\    " <LI>" PRINT
+\    PRINT
+\    " </LI>" PRINTLN
+\  ;
+
+: begin-numbered-list-mode
+  " <OL>" PRINTLN
+  ~numbered-list mode-stack @ stack::push
+;
+
+: end-numbered-list-mode
+  " </OL>" PRINTLN
+  mode-stack @ stack::pop DROP
+;
+
+
+: begin-list-mode
+  " <UL>" PRINTLN
+  mode-stack @ stack::push ~list
+;
+
+: end-list-mode
+  " </UL>" PRINTLN
+  mode-stack @ stack::pop DROP
+;
+
+( responsible for returning the processing word corresponding to the given
+  start-of-line token.
+  Note that this is context-sensitive - it honors the currerent mode.
+  This simplifies processing of lists and tables, and allows us to use, for
+  instance, a number at the beginning of a regular line without unexpectedly switching into list mode.)
+: token-to-word
+    mode-stack @ stack::peek
+
+    BEGIN
+
+      DUP ~normal EQ IF
+        SWAP
+        DUP " #"    S= IF ~emit-h1-tag BREAK THEN
+        DUP " ##"   S= IF ~emit-h2-tag BREAK THEN
+        DUP " ###"  S= IF ~emit-h3-tag BREAK THEN
+        DUP " ####" S= IF ~emit-h4-tag BREAK THEN
+        DUP " +" S= IF ~emit-p-tag BREAK THEN
+        DUP " @list" S= IF ~begin-list-mode BREAK THEN
+        DUP " @numbered-list" S= IF ~begin-numbered-list-mode BREAK THEN
+        DUP " @end"  S= IF ~end-mode BREAK THEN
+
+        ( default is a paragraph )
+        null
+
+      ELSE
+        DUP ~list EQ IF
+          SWAP
+          DUP " -" S= IF ~emit-li-tag BREAK THEN
+          DUP " *" S= IF ~emit-li-tag  BREAK THEN
+          DUP " @end" S= IF ~end-list-mode BREAK THEN
+        ELSE
+          DUP ~numbered-list EQ IF
+            SWAP
+            DUP " 1." S= IF ~emit-li-tag BREAK THEN
+            DUP " 2." S= IF ~emit-li-tag BREAK THEN
+            DUP " 3." S= IF ~emit-li-tag BREAK THEN
+            DUP " 4." S= IF ~emit-li-tag BREAK THEN
+            DUP " 5." S= IF ~emit-li-tag BREAK THEN
+          DUP " @end" S= IF ~end-numbered-list-mode BREAK THEN
+          THEN
+        THEN
+      THEN
+
+    CATCH
+
+    SWAP
+    DROP
+;
+
+
+( ---------------------------------- )
+( Main program )
+( ---------------------------------- )
+
+
+( Arguments
+  All arguments to sf.js are put on the stack in the same order they are
+  provided in the command line. That is, argument 1 is put on the stack
+  first, so becomes the deepest stack element, and so forth, with the last
+  argument being on the top of the stack.
+  For convenience, we put them into variables.
+)
+
+( not that since all command line arguments are available on this stack
+  this has the effect of putting the first argument into the input_file
+  variable )
+
+VAR input-file
+
+" Converting file: " PRINT input-file @ PRINTLN
+
+( Open the input file and save the file handle for later. )
+input-file @ FILE::OPEN VAR file-handle
+
+0 VAR items
+
+~normal mode-stack @ STACK::PUSH
+
+BEGIN
+  ( get the first word in the file and save it )
+  file-handle @ FILE::GET-WORD VAR the-word
+
+  ( If we attempt to get a word and that would take us past the end of the
+    file, null is put on the stack instead of the word )
+  the-word @ TYPEOF " null" S= IF
+    " We are done!" PRINTLN
+    EXIT
+  THEN
+
+  file_handle @ FILE::GET-LINE VAR the-line
+
+  the-word @ token-to-word VAR token-word
+
+  token-word @ typeof " null" S= IF
+    A[ " <P>" the-word @ "  " the-line @ " </P>" ] PRINTLN
+  ELSE
+    the-line @ token-word @ EXEC
+  THEN
+
+  " " PRINTLN
+
+  items INC!
+
+REPEAT
+
+" Done!" PRINTLN
+
+file_handle @ file::close

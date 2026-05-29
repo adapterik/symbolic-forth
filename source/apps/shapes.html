@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Shapes | Applications | Symbolic FORTH</title>
+<link rel="stylesheet" href="shapes.css">
+</head>
+<body>
+
+<div id="header">
+  <div id="title">
+    Shapes
+  </div>
+  <div id="menu">
+     <a href="/applications.html">&lt;&lt; Back to Applications</a>
+  </div>
+  <div id="alert"></div>
+</div>
+
+<div class="shapes">
+  <div class="display">
+    <canvas class="canvas" id="canvas"></canvas>
+  </div>
+  <div class="feedback">
+    <div class="output" id="output"></div>
+    <div class="console" id="console"></div>
+</div>
+
+<!--<div id="input">
+  <input name="code_input" id="code_input_field">
+  <button type="button" id="code_input_button">Run</button>
+</div>-->
+
+<div id="input">
+  <form id="code_input_form">
+  <div id="code_input_history_pos">1</div>
+  <input name="code_input" id="code_input_field" focus autocomplete="off">
+  <button type="button" id="code_input_button">Run</button>
+  </form>
+</div>
+
+
+<script src="shapes.js" type="module"></script>
+
+</body>
+
+</html>

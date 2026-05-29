@@ -1,0 +1,273 @@
+( ---------------------------------- )
+( Setup - e.g. globals, messages.    )
+( ---------------------------------- )
+
+" CSV Report" PRINTLN
+" ^^^^^^^^^^" PRINTLN
+
+( we read character by character, because a column may have a line break
+  if it is a delimited string )
+
+: space 32 ;
+: double-quote 34 ;
+: comma 44 ;
+: eol 10 ;
+: eof 0 ;
+
+: read-quoted-field ( file-handle/fd -- gathered-text/string|null status/symbol)
+  LOCAL file-handle
+  0 ARRAY::NCREATE LOCAL strings
+
+  ( TODO: handle embedded double quotes )
+  A[ DOUBLE-QUOTE ] LOCAL@ file-handle FILE::GET-UNTIL-CODE
+  EOF = IF
+    DROP
+    ( TODO: we need to throw an exception here, I think )
+    null
+  THEN
+
+  ( now we need to get up to the comma )
+  A[ COMMA EOL ] LOCAL@ file-handle FILE::GET-UNTIL-CODE
+  ( we don't need the result, so get rid of it )
+  SWAP DROP
+  DUP EOF = IF
+    DROP
+    ~EOF
+  ELSE
+    EOL = IF
+      ~EOL
+    ELSE
+      ~OK
+    THEN
+  THEN
+  SWAP
+;
+
+( ---------------------------------------- )
+( Read the text up to the next comma       )
+( ---------------------------------------- )
+: read-raw-field ( file-handle -- field:string line-status:symbol field:string )
+  LOCAL file-handle
+
+\    A[ 32 9 10 ] LOCAL@ file-handle FILE::GET-WHILE-CODE DROP
+
+  { A[ COMMA EOL ] LOCAL@ file-handle } FILE::GET-UNTIL-CODE
+
+  DUP EOF = IF
+    ( end of file )
+    DROP ( the matching char code )
+    ~EOF
+  ELSE
+    EOL = IF
+      ~EOL
+    ELSE
+      ~OK
+    THEN
+  THEN
+  SWAP
+;
+
+: convert-field ( field-value/string type/symbol -- value/any )
+ COND
+   ~string EQ OF ( do nothing, just keep string ) END
+   ~number EQ OF STRING::TO-NUM END
+   ~date EQ OF " -" SWAP STRING::SPLIT END
+ END
+;
+
+0 VAR field-count
+
+
+: read-row ( file-handle/fd -- row/array )
+    LOCAL file-handle
+    LOCAL types
+
+    0 ARRAY::NARRAY LOCAL row
+    -1 LOCAL colno
+
+    BEGIN
+      LOCAL@ file-handle FILE::GET-CHAR
+
+      ( end of file )
+      DUP TYPEOF " null" EQ IF BREAK THEN
+
+      ( end of line )
+      DUP EOL = IF " EOLN" PRINTLN DROP BREAK THEN
+
+      ( find the first char of the field to determine what to do next )
+      DUP
+      COND
+        DOUBLE-QUOTE =
+           OF
+            DROP \ get rid of the character
+            LOCAL@ file-handle read-quoted-field
+          END
+        COMMA =
+          OF
+            ( this can happen with an empty - not even a space - field )
+            ( we create an empty string field )
+            DROP \ get rid of the character
+            ~OK " "
+          END
+        EOL =
+          OF DROP CONTINUE END
+        SPACE =
+          OF DROP CONTINUE END
+        DROP true
+          OF
+            \ Otherwise, collect until the next comma or end of line
+            LOCAL@ file-handle read-raw-field
+            \ we have to fuss with the stack to get things in the right
+            \ order
+            2 MOVE STRING::CONCAT
+          END
+      END
+
+      LOCAL@ colno 1 + LOCAL! colno
+      \ convert the string into the ultimate type; we now do this in a
+      \ separate pass, but this works too.
+      LOCAL@ types IF
+      { LOCAL@ colno LOCAL@ types ARRAY::GET } convert-field
+      THEN
+
+      \ append to the row
+      LOCAL@ row ARRAY::APPEND
+
+      \ handle line state
+      COND
+        ~EOF EQ OF BREAK END
+        ~EOL EQ OF BREAK END
+        DROP true OF END
+      END
+
+    REPEAT
+
+    LOCAL@ row
+;
+
+: convert-row ( row/array types/array -- converted-row/array )
+    LOCAL types
+    LOCAL row
+    0 LOCAL colno
+    0 ARRAY::NARRAY LOCAL converted-row
+    L@ row ARRAY::LENGTH LOCAL count
+    BEGIN
+      L@ colno L@ count = IF BREAK THEN
+
+      { LOCAL@ colno LOCAL@ row ARRAY::GET } \ array value
+      { LOCAL@ colno LOCAL@ types ARRAY::GET } \ type
+      convert-field
+      LOCAL@ converted-row ARRAY::APPEND
+
+      L@ colno 1 + L! colno
+    REPEAT
+
+    LOCAL@ converted-row
+;
+
+: year-month-key
+  LOCAL row
+  1 LOCAL@ row A@ LOCAL date
+
+  \ make the binning
+  # { 1 LOCAL@ date A@ } " -" { 0 LOCAL@ date A@ } STRING::JOIN
+;
+
+: provider-key
+  2 SWAP A@
+;
+
+: coverage-type-key
+  3 SWAP A@
+;
+
+M{ ~coverage-type ~coverage-type-key ~provider ~provider-key ~date ~year-month-key } VAR label-creators
+
+: main
+
+  \ argument 1
+  LOCAL label-creator
+  " Total by: " PRINT LOCAL@ label-creator PRINTLN
+
+  \ Argument 2
+  LOCAL input-file
+  " For file" PRINT LOCAL@ input-file PRINTLN
+
+  LOCAL@ input-file FILE::OPEN LOCAL file-handle
+
+  A[ ~string ~date ~string ~string ~string ~date ~string ~number ~number ~number ~number ~number ~number ~number ~number ~number  ~string ] LOCAL row-types
+
+  ( read the header row )
+  false LOCAL@ file-handle read-row LOCAL header
+
+  M{ } LOCAL summary
+
+  0 LOCAL line-count
+
+  null LOCAL row
+
+  BEGIN
+
+    LOCAL@ row-types LOCAL@ file-handle read-row LOCAL! row
+
+    LOCAL@ row ARRAY::LENGTH 0 = IF
+      " Rows: " PRINT LOCAL@ line-count PRINTLN
+      BREAK
+    THEN
+
+    \ we can also process the rows in a separate pass for debugging.
+    \ LOCAL@ row-types convert-row DUP LOCAL row
+
+    ( process line! )
+
+    ( swap in your favorite label-creating word )
+    { LOCAL@ label-creator label-creators @ MAP::GET } LOCAL label-word
+    { LOCAL@ row LOCAL@ label-word EXEC } LOCAL label
+
+    \ get the value to sum
+    11 LOCAL@ row A@ LOCAL value
+
+    \ get the bin, if it exists.
+    LOCAL@ label LOCAL@ summary M@
+
+    DUP NULLP IF
+      { LOCAL@ value LOCAL@ label LOCAL@ summary } MAP::SET
+      DROP
+    ELSE
+      { LOCAL@ value + LOCAL@ label LOCAL@ summary } MAP::SET
+    THEN
+
+    LOCAL@ line-count 1 + LOCAL! line-count
+
+  REPEAT
+
+  LOCAL@ file-handle file::close
+
+  " " PRINTLN
+
+  0 LOCAL max-key-width
+  # LOCAL@ summary MAP::KEYS
+  BEGIN
+    DUP #= IF BREAK THEN
+    SYMBOL::NAME STRING::LENGTH LOCAL@ max-key-width MAX LOCAL! max-key-width
+  REPEAT
+
+  # " s:%10.2f" LOCAL@ max-key-width to-string " %-" STRING::JOIN LOCAL format
+
+  # LOCAL@ summary MAP::KEYS
+  BEGIN
+    DUP #= IF BREAK THEN
+    # SWAP
+    DUP LOCAL@ summary MAP::GET
+    \  now we have the value and key on the top of the stack.
+    SWAP
+    LOCAL@ format PRINTF
+    " " PRINTLN
+  REPEAT
+;
+
+main
+
+" " PRINTLN
+" Done!" PRINTLN
+

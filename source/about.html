@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>About | Symbolic FORTH</title>
+<link rel="stylesheet" href="about.css">
+    <meta charset="utf-8">
+</head>
+<body>
+
+<div id="header">
+    <div id="title">
+        About
+    </div>
+    <div id="menu">
+        <a href="index.html">Home</a>
+        <a href="testing.html">Testing</a>
+        <a href="programming.html">Programming</a>
+        <a href="applications.html">Applications</a>
+        <a href="manual.html">Manual</a>
+        <a href="about.html" class="selected">About</a>
+    </div>
+    <div id="alert"></div>
+</div>
+
+<div id="content">
+    <h1>About Symbolic FORTH</h1>
+
+    <p>Symbolic FORTH is:</p>
+
+    <ul>
+    <li>FORTH-like</li>
+    <li>A full development environment</li>
+    <li>Mostly for education purposes - but real apps can be built as well</li>
+    </ul>
+
+    <h2>FORTH-like</h2>
+
+    <p>What do we mean by FORTH? And what does it mean to be like FORTH?</p>
+
+    <p>FORTH is a very interesting programming language invented, or some say "discovered", by Charles "Chuck" Moore in the late 1960s, and is given the birth year of 1970. It was originally used for controlling telescopes, and has found a solid home for embeded programming. This is due to its rather spartan, syntax-free design. This allows language core to be implemented in a few dozen or hundred lines of assembly language. This feature has made it very popuplar for microcontrollers and generally for embedded applications.</p>
+
+    <p>As FORTH has been used over the decades, there has arisen a rather large standard for FORTH, and there are many implementations. Chuck Moore, however, describes it as a "personal language" and strives continually to minimize the language. In fact, Chuck left the company he helped found (forth, inc. - forth.com) partly because he did not enjoy the direction of enlarging the language with a plethora of built-in functionality. He prefers to start very small, and only add functionality required for the problem at hand.</p>
+
+    <p>So FORTH has these two faces - standardized and large (some would say bloated) and personal and minimal.</p>
+
+    <p>This project, Symbolic FORTH, tries to take Chuck's approach. In fact, I would add one additional attribute - adapted to the platform it is running on.</p>
+
+    <p>Chuck and most FORTHers work with small microcontrollers and thus need to deal with assembly language as the base implementation. This means that much of the base implementation is concerned with the characteristics of the MC, with the board it is integrated into. However, when implementing on top of Javascript and a web browser, we do not have those same concerns. Rather, the basis for our FORTH is Javascript itself. Thus, we can exploit many charactersicts of JS, like garbage collection for memory management, JS datatypes, and JS programming.</p>
+
+
+</div>
+
+<script src="index.js" type="module"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,212 @@
+@import "/common.css";
+
+
+#display {
+    border: 1px solid green;
+    width: 100%;
+    flex: 1 1 0;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#display > .infowindow > .body {
+    display: block;
+}
+
+#display > .infowindow > .body > canvas {
+/*     flex: 1 1 0; */
+    border: 1px solid red;
+    width: 600px;
+    height: 400px;
+}
+
+#store {
+    flex: 0 0 10rem;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+}
+#store > #variables {
+    flex: 1 1 0;
+    overflow-y: auto;
+    background-color: gray;
+    display: flex;
+    flex-direction: column;
+}
+#store > #constants {
+    flex: 1 1 0;
+    overflow-y: auto;
+    background-color: silver;
+    display: flex;
+    flex-direction: column;
+}
+#store > #strings {
+    flex: 1 1 0;
+    overflow-y: auto;
+    background-color: gray;
+    display: flex;
+    flex-direction: column;
+}
+
+#store > #objects {
+    flex: 1 1 0;
+    overflow-y: auto;
+    background-color: silver;
+    display: flex;
+    flex-direction: column;
+}
+
+.layout-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.infowindow {
+/*     flex: 0 0 10rem; */
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.infowindow > .titlebar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+}
+
+.infowindow > .titlebar > .title {
+  font-weight: bold;
+}
+
+.infowindow > .body {
+    flex: 1 1 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem;
+}
+
+.stacks-row {
+    flex: 0 0 10rem;
+}
+
+#stacks {
+}
+
+#stacks > #data {
+   background-color: green;
+}
+
+#stacks > #return {
+   background-color: yellow;
+}
+
+
+
+#interaction {
+  flex: 0 0 10rem;
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+}
+
+
+#info {
+  flex: 1 1 0;
+  background-color: white;
+  color: green;
+  font-family: monospace;
+  /*     white-space: pre; */
+  overflow-y: auto;
+}
+
+.input {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+#code_input_form {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: row;
+}
+
+#code_input_history_pos {
+    flex: 0 0 4em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#code_input_field {
+  flex: 1 1 0;
+  font-family: monospace;
+  font-size: 110%;
+}
+
+#code_input_button {
+  flex: 0 0 auto;
+}
+
+#info .error {
+    color: red;
+}
+
+#info .warning {
+    color: orange;
+}
+
+
+
+.table {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.table > .header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    font-style: italic;
+}
+
+.table > .body {
+    flex: 1 1 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.table .row {
+   flex: 0 0 auto;
+   display: flex;
+   flex-direction: row;
+}
+
+.table .cell {
+   flex: 1 1 0;
+   display: flex;
+   flex-direction:column;
+}
+
+
+
+.table .cell.index {
+    flex: 0 0 4rem;
+}
+
+.table .cell.type {
+    flex: 0 0 8rem;
+}
+
+.table .cell.value {
+    flex: 1 1 0;
+}

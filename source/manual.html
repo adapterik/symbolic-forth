@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Manual | Symbolic FORTH</title>
+    <link rel="stylesheet" href="manual.css">
+    <meta charset="utf-8">
+</head>
+<body class="manual-page">
+
+<div id="header">
+    <div id="title">
+        Manual
+    </div>
+    <div id="menu">
+        <a href="index.html">Home</a>
+        <a href="testing.html">Testing</a>
+        <a href="programming.html">Programming</a>
+        <a href="applications.html">Applications</a>
+        <a href="manual.html" class="selected">Manual</a>
+        <a href="about.html"">About</a>
+    </div>
+    <div id="alert"></div>
+</div>
+
+<div id="content">
+    <h1>Symbolic FORTH</h1>
+
+    <h2>A Different FORTH</h2>
+
+    <p>
+        Symbolic Forth is a FORTH that reflects both the traditional FORTH approach to programming, yet also brings some concepts and conveniences from my programming career. It is oriented to the browser, so its internals are not integers, pointers and circular stacks, but core Javascript structures like numbers, maps and arrays.
+    </p>
+
+    <p>
+        Some types are read in literally and placed directly on stack. These include number, symbol and boolean. Others are stored separately and a reference placed on the stack. These include string, map, and array.
+    </p>
+
+    <p>
+        The purpose of this project is education and fun! First, to teach the fundamentals of FORTH, at least at the high level (low level FORTH, the original and most prevalent, this is not) - stacks, reverse polish notation, words, the parser, compiler and interpreter. Second, it is also fun to put this together. That is, it has been fun for me, but I hope it is fun for others to tinker with as well.
+    </p>
+
+    <h2>Types</h2>
+
+    <p>
+        FORTH does not traditionally have any sense of types in the modern sense. Or rather, should we say, it is based on the fundametal type being the natural word size of the computer it is running on. There is essentially no type checking. More complex types like doubles, strings, arrays, and so forth do exist, but are typically created and used with bespoke "words" (like functions).
+    </p>
+
+    <p>
+        This FORTH is based on browser Javascript so it has some basic types available underneath, and I've chosen to expose these to the language. This allows Symbolic FORTH to be more easily used to program directly against the browser DOM. Yes, it might be fun one day to fork this FORTH and limit it to a more basic type and build from there, but not yet, perhaps never.
+    </p>
+
+
+    <h3>Recognizers - Parsing</h3>
+
+    <p>
+        Recent FORTHs have utilized a technique called "recognizers" to assist in structured, or at least organized, parsing. This project does as well, because it is a handy conceptual model for both partitioning responsibility within the parser, but also for being able to expand it as needed.
+    </p>
+    <p>
+        A recognizer does what its name suggests - it recognizes something in a FORTH program. It does so at "parsing time" - that is, when the text of the program is being consumed by the FORTH system, and turned into something that can be executed. A recognizer is a small program that, given a text token (essentially a "word" - but not in the FORTH sense of "word") says "aha, I know what that is, I'll handle it!"
+    </p>
+    <p>
+        This recognition is one way of thinking of parsing. A parser needs to make sense of the text given to it.
+    </p>
+
+    <p>
+        Clasically, FORTH can only recognize a token as a number (usually just an integer) and if that fails assumes it is a word and if that fails it considers the program to be in error.
+    </p>
+
+    <p>
+        Recognizers expand this mechanism to allow for the recognition of things other than integers, like floating point numbers, symbols, dates, measurements, and so forth. Basically any value that can be represented as a single text token can have a recognizer. In our system, at least, words even have a recognizer. The word recognizer is run last, and if it finds that the token matches a FORTH dictionary word, handles it. If no recognizer is invoked for a token, it is a program error.
+    </p>
+
+    <p>
+        FORTH is a word-oriented language, which at the program text level is essentially what we think of as a "word" - continuous letters and numbers without spaces. This "word" is better and less ambiquosly referred to as a "token". FORTH is different than byte-oriented programming languages, in which any character in the text can control the program.
+    </p>
+
+    <p>
+        The word/token-oriented nature of FORTH does lead to awkwardness in the case of data or program structures that span across spaces. (I'm still thinking about this, because it seems somewhat arbitrary.) The impact of this is that we can have recognizers for whole word/tokens, like a number, date, symbol, boolean true/false, null, and of course program "words" (aka functions). But we can't have them for strings, arrays, structures. For these, we need to have special words which themselves parse the program text.
+    </p>
+
+    <p>
+        So we have token recognizers which interpret a token, but we also have parsing words, which take over the job of parsing the program text after they are themselves recognized as a program word and ending when they sense something to end their parsing in the program text. A string starts with the word <code>"</code>, which then starts eating up the program text until it encounters a literal `"` character in the text, at which point it will stop consuming the program text, create a string with what it consumed, and returns to the main parser.
+    </p>
+
+
+    <h3>Built-In Types</h3>
+
+    <p>
+        This FORTH provides several data types beyond just the integer. In fact, the basic type is the number, not integer, as this is what Javascript offers.
+    </p>
+
+    <p>
+        All Symbolic Forth values are stored with their typing intact. This allows us to use polymorphic words when appropriate. For instance, the output word <code>.</code> will print the canonical form of any value provided to it from the Data Stack. However, other types of words like comparisons (equality, less than, etc.) are not polymorphic because the way one compares values of different types are too different. In such cases a generic approach can lead to confusion.
+    </p>
+
+    <dl>
+        <dt>number</dt>
+        <dd>A Javascript number - either integer or decimal form accepted, positive or negative. Examples: <code>123</code>, <code>1.23</code>, <code>0</code>, <code>-456</code></dd>
+
+        <dt>string</dt>
+        <dd>A Javascript string, provided in the classic FORTH style, using the double-quote as a word to start reading a string from the program stream. A string ends with the character <code>"</code>. Examples: <code>" a string"</code> </dd>
+
+        <dt>boolean</dt>
+        <dd>A Javascript boolean, provided as a raw token of either true or false. Examples: <code>true</code>, <code>false</code></dd>
+
+        <dt>symbol</dt>
+        <dd>This type does not have a Javascript equivalent; it is simply stored as a string. A symbol is basically a single-word string value, with the string stored in a separate symbol table. Within FORTH code it is provided by using a <code>'</code> prefix. [If FORTH encounters a token which is not a word, number, or boolean, it is interpreted as a symbol. Examples: <code>foo VAR bar</code>, <code>foo .</code>]</dd>
+
+        <dt>array</dt>
+        <dd>An array is simply a sequence of any number of FORTH values. We
+        do not currently support words in an array. Arrays may be created,
+        any member accessed, and any member set. We may also get the length
+        of an array.</dd>
+
+    </dl>
+
+    <h3>User-Defined Types</h3>
+
+    <blockquote>TODO</blockquote>
+
+    <h3>Vocabularies</h3>
+
+    <p>Many FORTHs support a "vocabulary" feature. A vocabulary is essentially a namespace (a term used in many programming languages) - a separate storage structure in which words and data may be stored.</p>
+
+    <p>Each vocabulary has a name, such as <code>string</code>, used to prefix words available in the vocabulary. For instance <code>string::compare</code> is a word in the string vocabulary which allows one to obtain a string ordering comparison (as implemented in javascript's localeCompare method). Since this word is not relevant to any other data type, it is available only in the string vocabulary.</p>
+
+    <p>In fact, this is one of the primary uses of vocbularies - the make type-specific words available in a separate namespace.</p>
+
+    <p>Standard(ish) FORTH words are available in the empty vocbulary, which may be accssed without any prefix (or with <code>::</code> if you like, but that is a bit silly.)</p>
+
+    <h3>Modes</h3>
+
+    <blockquote>TODO</blockquote>
+
+    <h3>Some Batteries Included</h3>
+
+    <blockquote>TODO</blockquote>
+
+    <h3>DOM Integration</h3>
+
+    <blockquote>TODO</blockquote>
+
+    <h2>Compliation and Interpretation</h2>
+
+    <blockquote>TODO</blockquote>
+
+    <h2>Errors</h2>
+
+    <blockquote>TODO</blockquote>
+
+    <h2>Core Words</h2>
+
+    <h3>Comments</h3>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    (
+                </td>
+                <td>
+                    Comment start
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                    Continues reading program and discarding input until the ) character is encountered
+                </td>
+            </tr>
+            <tr>
+                <td>
+                   \\
+                </td>
+                <td>
+                    Line comment start
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                    Continues reading and discarding program input until an end of line character is encountered.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                  //
+                </td>
+                <td>
+                    Line comment start
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                    Continues reading and discarding program input until an end of line character is encountered.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+<!--
+    <h3 class="forth-word">(</h3>
+    <p>Begin comment</p>
+    <p>Data stack usage: 0</p>
+    <p>Continues reading program input until the ) character is encountered</p>
+    <h4>Examples</h4>
+    <div class="code-example">
+        ( This is a comment! )
+        1 1 + .
+    </div>-->
+
+    <h3>Data Stack Words</h3>
+
+    <p>
+        Words for manipulating or finding out about the status of the data stack. The data stack is abbreviated to <code>DS</code>.
+    </p>
+
+    <p>
+        Note that the <i>Data Stack</i> is also referred to in FORTH systems as the <i>Parameter Stack</i>, as it normal method for a word to receive parameters. At the same time, a word "returns" data by placing it onto the same stack. So, a more general term for this stack seems to be Data Stack.
+    </p>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    DUP
+                </td>
+                <td>
+                    Duplicate top element of data stack
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    DROP
+                </td>
+                <td>
+                    Remove top element of data stack and discard
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    DEPTH
+                </td>
+                <td>
+                    Push the size of the data stack onto the top of the stack
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Return Stack Words</h3>
+    <p>
+        Words for manipulating or finding out about the status of the return stack. The data stack is abbreviated to <code>RS</code>.
+    </p>
+    <p>
+        In a traditional low level FORTH, the return stack is literally used to place the return address of a word when it, for instance, calls another word. For that reason, although this stack may be used as a general-purpose stack, when it is used within a word (which is everything other than the very top level of FORTH code), upon exit from the word it always must be left in the same state it was in when the word was called.
+    </p>
+    <p>
+        In this FORTH, the return stack is not used for "return", but functions as second data stack. However, we still do insist that the Return Stack be treated carefully and that it be left in its original state upon a word's exit.
+    </p>
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    R>
+                </td>
+                <td>
+                    Pop the top item from the RS and push it onto the DS
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                   R@
+                </td>
+                <td>
+                    Copy the top item from the RS and push it onto the DS
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                   0
+                </td>
+                <td>
+                   0
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                   >R
+                </td>
+                <td>
+                    Pop the top item from the DS and push it onto the RS
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                   0
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                   RDROP
+                </td>
+                <td>
+                    Remove and discard the top item, if any, on the RS
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                   1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                   RSIZE
+                </td>
+                <td>
+                    Push the size of the RS onto the top of the DS
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                   0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+
+
+    <h3>Numeric Comparison</h3>
+
+    <p>
+        <code>FORTH</code> generally frowns upon words supporting more than one type - in other words, we don't often have polymorphic words. This may make <code>FORTH</code> a bit too literal for some, but it ensures that words have just one meaning, which makes reading and debugging code that much easier.
+    </p>
+
+    <p>
+        As a consequence, each of our basic supported types (number, boolean, string, symbol, array, object) has its own set of comparison operators. This section covers just the numeric comparison words.
+    </p>
+
+    <p>
+        Each comparison word takes the top two items from the Data Stack, and applies the appropriate comparison. The number to be the subject of the comparison is the second one taken from the stack. That is, when writing a line of code like <code>1 2 &lt;</code>, we can read this as <code>1 &lt; 2</code>.
+    </p>
+    <p>
+        This may seem counterintuitive if you have fully incorporated "stack"-oriented thinking. If you think in stack terms from the point of view of the word itself, the first value to be taken from the stack is the last one put on the stack. So in this sense the first parameter is actually the second one in the code text. However, the textual order, which matches the order in which items are placed on the stack, not taken off of it, is how we read the code.
+    </p>
+    <p>
+        If either item is not a numeric value, an error message is generated and the forth system resets to its original state. If you wish to debug your program using the state of the system when the error occurs, set the system mode to <code>debug</code>, like <code>'debug ! MODE</code>.
+    </p>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    =
+                </td>
+                <td>
+                    Pops the top two items on the DS, and if they are numeric, evaluates whether they are equal, and places the boolean result on the top of the DS.
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    2
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    If either of the values popped are non-numeric, an error is thrown.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    != <br/>
+                    ≠
+                </td>
+                <td>
+                    Pops the top two items on the DS, and if they are numeric, evaluates whether they are not equal, and places the boolean result on the top of the DS.
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    2
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    If either of the values popped are non-numeric, an error is thrown.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    &gt;
+                </td>
+                <td>
+                    Pops the top two items on the DS, and if they are numeric, evaluates whether the second is greater than the first, and places the boolean result on the top of the DS.
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    2
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    If either of the values popped are non-numeric, an error is thrown.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    &lt;
+                </td>
+                <td>
+                    Pops the top two items on the DS are equal, and if they are numeric, evaluates whether the second is less than the first, and places the boolean result on the top of the DS.
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    2
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    If either of the values popped are non-numeric, an error is thrown.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    &gt;= <br/>
+                    ≥
+                </td>
+                <td>
+                    Pops the top two items on the DS are equal, and if they are numeric, evaluates whether the second is greater than or equal to the first, and places the boolean result on the top of the DS.
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    2
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    If either of the values popped are non-numeric, an error is thrown.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    &lt;= <br/>
+                    ≤
+                </td>
+                <td>
+                    Pops the top two items on the DS are equal, and if they are numeric, evaluates whether the second is less than or equal to the first, and places the boolean result on the top of the DS.
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    2
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    If either of the values popped are non-numeric, an error is thrown.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <blockquote>
+        You may have noticed that we can probably do away with !=, &gt;=, and &lt;=, as these may be implemented by combining words. However, these are such common concepts they deserve their own words; it makes code more pleasant to read.
+    </blockquote>
+
+    <h3>Variables and Constants</h3>
+
+    <p>
+        While FORTH is oriented around stacks, and is at its core can be programmed only with stacks, it is rather convenient to be able to store values with an associated name for future and repeated reuse.
+    </p>
+
+    <p>
+        Constants and Variables work very similarly, but contstants may not be set more than once.
+    </p>
+
+    <p>
+        Both variables and constants work at both compile and real time. This is because variable and constants reference their symbolic name, which must be converted to the equivalent internal identifier. This is equivalent to low level FORTH systems which compile a reference to an address. For the sake of efficiency, this lookup is performed at compile time. In order to accomplish this, the variable name is placed after the word, and the word consumes this token in the program stream during compile time.
+    </p>
+
+    <p>
+        One implication of this is that variables must be defined in the system before they are used. This may seem obvious, but there are circumstances in which we want to compile a forth-coded word definition which uses variable references, making this approach a bit tricky. In such cases, variables simply need to be defined before a word using them is defined.
+    </p>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    VAR
+                </td>
+                <td>
+                    Create a variable of a given name and set its value from the top item of the stack.
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    This is one of a few words which is active at compile and run time.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    CONST
+                </td>
+                <td>
+                    Create a constant of a given name and set its value from the top item of the stack.
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    This is one of a few words which is active at compile and run time. Note that this is the one time a value may be assigned to a constant.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    !
+                </td>
+                <td>
+                    Store the top value of the stack in the given variable.
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    This is one of a few words which is active at compile and run time.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    @
+                </td>
+                <td>
+                    Fetch the value of the given variable and push it onto the DS.
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    This is one of a few words which is active at compile and run time.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                   !INC
+                </td>
+                <td>
+                    Increment a named variable by a numeric value popped from the DS.
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td>
+                    This is one of a few words which is active at compile and run time.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Locals</h3>
+
+    <p>
+        Local variables are useful in words of more state. Of course, we should
+        attempt to keep words concise and simple.
+    </p>
+
+    <p>
+        For clarity, it can useful to populate local variables with parameters,
+        particulary for educational software and for algorithms that would otherwise need to use variables and push and pop values off of the data stack.
+    </p>
+
+    <code class="example" style="margin-bottom: 1rem;">
+: MY_WORD
+
+LOCAL FOO ( consumes the top stack item )
+LOCAL BAR ( consumes the next stack item )
+
+" Hi, this is fun isn't it" .
+CR
+" FOO IS: " .
+@ FOO .
+CR
+" and BAR is: " .
+@ BAR
+CR
+;
+
+123 456 MY_WORD
+    </code>
+    <code class="example" style="margin-bottom: 1rem;">
+: MY_STORY
+
+LOCAL name
+
+" Hi, " .
+L@ name .
+" , isn't this fun!" .
+CR
+" Well, that's all, " .
+L@ name .
+" !" .
+CR
+;
+
+" Bob" MY_STORY
+    </code>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    LOCAL
+                </td>
+                <td>
+                    Creates a local variable within a word definition.
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    <code>123 LOCAL FOO</code> defines a local variable FOO and assigns it the numeric value FOO
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    L!
+                </td>
+                <td>
+                    Store into a local variable
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    <code>123 L! FOO</code> stores the numeric value 123 in the local variable named FOO
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    l@
+                </td>
+                <td>
+                    Fetch a local variable
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    <code>L@ FOO</code> fetches the value of the variable FOO and pushes it onto the stack
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+
+
+    <h3>Conditional</h3>
+
+    <p>
+        We currently have only one conditional feature in the lanauge, the venerable IF.
+    </p>
+
+    <p>
+        if you are unfamiliar with how <code>IF .. ELSE .. THEN</code> works in FORTH, you should consult a man page, or make that a few, to get a grip on it. It is very forth, and even though it uses the same "keywords" as other languages, the work quite differently.
+    </p>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    IF .. THEN</br>
+                    IF .. ELSE .. THEN<br/>
+                </td>
+                <td>
+                    Conditionally runs one or one of two sections of code.
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    See the documentation, it is a bit too much to explain here.
+                </td>
+            </tr>
+
+        </tbody>
+    </table>
+
+
+    <h4>Example</h4>
+
+    <code class="example" style="margin-bottom: 1rem;">
+1 IF " true" ELSE " false" THEN
+    </code>
+
+    <p>should print ... true.</p>
+
+    <h4>Todo</h4>
+
+    <p>I'd like a form of CASE .. it can be very useful and is much more readable than a sequence of IF.
+
+    <p>Oh, or even the cooler COND!</p>
+
+<code class="example">
+" chow"
+COND
+" kibble" S= OK " cat" NEXT
+" chow"   S= OK " dog"
+PRINT
+ENDCASE
+</code>
+
+    <p>Yes, this prints ... "dog".</p>
+
+
+    <h3>Looping</h3>
+
+    <p>
+        As is the case for conditional words, we have only one <i>looping</i> word at present as well. Of course, we would like to add more, and we may - see the Todo section below.
+    </p>
+
+    <p>
+    </p>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    DO .. LOOP
+                </td>
+                <td>
+                    Loops over a section of code N times, where N is determined by two values from the stack as shown above.
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    2
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    <p>
+                    As with other FORTH words like math operations, for ease of human understanding we discuss the arguments From left to right in textual order, rather in their stack order.
+                    </p>
+
+                    <p>we have a number to count up to - the loop's last run is when the internal counter is the same as count_to. And the second argument is the starting number for the internal counter.
+                    </p>
+                </td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    EXIT
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    BREAK
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    CONTINUE
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    RECURSE
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+
+    <h4>Example</h4>
+
+    <code class="example" style="margin-bottom: 1rem;">
+0 5 0 DO " iteration: " PRINT DUP PRINTLN 1 + LOOP
+    </code>
+
+    <p>Can you guess what this does?</p>
+
+    <p>First it puts 0 on the stack - we will use this to count iterations of the loop.</p>
+
+    <p>Then it puts 5, the loop limit, and 0, the starting loop count, on the stack.</p>
+
+    <p>The DO word consumes the 0 and 5 and uses them internally to control the loop. It proceeds to put a string on the stack, then prints it, removing it from the stack.</p>
+
+    <p>
+        The loop code next duplicates the top of the stack, which happens to be the 0 we first put there, and then prints that number and removes it from the stack.
+    </p>
+
+    <p>
+        Finally the loop code puts a one on the stack and adds the top two stack items. Underneath the 1 on the stack is our original 0. So now we have incremented the 0 and have 1 on the stack.
+    </p>
+
+    <p>
+        You should be able to guess what happens. The code within the loop runs 5 times, printing the numbers 1 through 5. That's it.
+    </p>
+
+
+    <h4>Todo</h4>
+
+    <blockquote>
+    TODO!
+    </blockquote>
+
+    <h3>BEGIN..REPEAT</h3>
+    <p>
+        The BEGIN word runs a section of code repeatedly. The section of code is terminated by the key-word (token) REPEAT. The mechanism is guided by the value on the stack prior to running BEGIN, and subsequently evaluated in ever repetition. If the value is "truthy" - 1, true, any string other than "", any list with 1 or more elements, any non-empty symbol - the code section is executed; when it becomes "falsey" - any other value - the code section is skipped and the program starts running immediately after the REPEAT key-word.
+    </p>
+
+    <p>
+        This is the most general-purpose loop in the language. By decrementing the predecessor value, or any other application logic taht sets the predecessor value, the loop can be controlled arbitrarily. On the other hand, the DO..LOOP always iterates for the given number of times.
+    </p>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    BEGIN
+                </td>
+                <td>
+                    BEGINs a section of code, terminated by REPEAT, which is repeated as long as the top stack value is truthy.
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+                    0
+                </td>
+                <td>
+
+                </td>
+            </tr>
+
+        </tbody>
+    </table>
+
+
+    <h4>Example</h4>
+
+    <code class="example" style="margin-bottom: 1rem;">
+    3
+    BEGIN
+      " Count: " PRINT
+      DUP PRINTLN
+      1 -
+    REPEAT
+    </code>
+
+    <p>
+        Note that it is common to structure code textually as above - with the code section indented and framed by the BEGIN and REPEAT. But this is FORTH, and all that matters is whitespace.
+    <p>
+
+    <h4>Todo</h4>
+
+    <blockquote>
+    TODO!
+    </blockquote>
+
+    <h3>Arrays</h3>
+
+    <p>
+        Symbolic FORTH supports arrays as an ordered, random-access sequence of any FORTH value (other than word). Most usage of arrays involves the array vocabulary, though arrays are pare of the core language.
+    </p>
+
+    <p>
+    </p>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+
+        </tbody>
+    </table>
+
+
+    <h4>Example</h4>
+
+    <code class="example" style="margin-bottom: 1rem;">
+    </code>
+
+
+    <h4>Todo</h4>
+
+    <blockquote>
+    TODO!
+    </blockquote>
+
+
+    <h3>SECTION</h3>
+    <p>
+    </p>
+
+    <p>
+    </p>
+
+    <table class="word-list">
+        <thead>
+            <tr>
+                <th>
+                    Word
+                </th>
+                <th>
+                    Meaning
+                </th>
+                <th>
+                    Compile-time?
+                </th>
+                <th>
+                    Run-time?
+                </th>
+                <th>
+                    DS used
+                </th>
+                <th>
+                    DS left
+                </th>
+                <th>
+                    RS used
+                </th>
+                <th>
+                     RS left
+                </th>
+                <th>
+                    Notes
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+            </tr>
+
+        </tbody>
+    </table>
+
+
+    <h4>Example</h4>
+
+    <code class="example" style="margin-bottom: 1rem;">
+    </code>
+
+
+    <h4>Todo</h4>
+
+    <blockquote>
+    TODO!
+    </blockquote>
+
+</div>
+
+<!-- <script src="manual.js" type="module"></script> -->
+
+</body>
+
+</html>

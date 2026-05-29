@@ -1,0 +1,94 @@
+@import "common.css";
+
+#content {
+flex: 1 1 0;
+min-height: 0;
+overflow-y: auto;
+padding: 1rem;
+}
+
+.manual-page code {
+    display: inline-block;
+    background-color: black;
+    color: lime;
+    border: 1px solid gray;
+    border-radius: 0.25;
+    padding: 0.25rem;
+}
+
+
+
+.manual-page code.example {
+    display: block;
+    border-radius: 1rem;
+    padding: 1rem;
+    white-space: pre;
+}
+
+.manual-page blockquote {
+    font-style: italic;
+    border-left: 3px dotted silver;
+    margin-left: 0;
+    padding-left: 2rem;
+}
+
+.manual-page table td:nth-child(1) {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.manual-page table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    width: 100%;
+}
+.manual-page table td {
+    border: 1px solid gray;
+    padding: 0.25rem;
+}
+.manual-page table td + td {
+    margin: 0;
+}
+.manual-page table th {
+    border: 1px solid gray;
+    padding: 0.25rem;
+}
+
+
+.manual-page table th:nth-child(1), .manual-page table td:nth-child(1) {
+    width: 5rem;
+}
+.manual-page table th:nth-child(2), .manual-page table td:nth-child(2) {
+    width: 14rem;
+}
+.manual-page table th:nth-child(3), .manual-page table td:nth-child(3) {
+    width: 7rem;
+}
+.manual-page table th:nth-child(4), .manual-page table td:nth-child(4) {
+    width: 4rem;
+}
+.manual-page table th:nth-child(5), .manual-page table td:nth-child(5) {
+    width: 4rem;
+}
+.manual-page table th:nth-child(6), .manual-page table td:nth-child(6) {
+    width: 4rem;
+}
+.manual-page table th:nth-child(6), .manual-page table td:nth-child(7) {
+    width: 4rem;
+}
+.manual-page table th:nth-child(6), .manual-page table td:nth-child(8) {
+    width: 4rem;
+}
+.manual-page table th:nth-child(7), .manual-page table td:nth-child(9) {
+
+}
+
+.manual-page p, .manual-page dl {
+    max-width: 50rem;
+}
+
+.forth-word {
+    font-family: monospace;
+    font-weight: bold;
+    border-bottom: 1px solid silver;
+}

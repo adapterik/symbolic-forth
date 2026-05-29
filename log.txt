@@ -1,0 +1,20 @@
+This is a simple log of the project, started a week or so into it.
+
+## 5/29/25
+
+Measured perf earlier, simple loop that did minimal work, just incrementing a variable. 1M iterations  - 150ms wforth, 5ms ff js
+
+Also, made some meta-word additions to assist in testing. Recently added local variables (working yet?), and fake return stack.
+
+Next I want to implement whatever I encounter from the forth workbook, and apply the workbook exercises!
+
+Then perhaps the editing environment.
+
+And we need some toys to play with, so begin on the canvas+html based gui.
+
+Oh, we could do a baby mardown processor, another challenge, but should not be too hard for some basics, enough for this log.
+
+
+## 5/31/25
+
+Added EXIT - working on RECURSE, BREAK, CONTINUE or whatever. Need to think a bit more. FORTH specs help, but I am diverging...

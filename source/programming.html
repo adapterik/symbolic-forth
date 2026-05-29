@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Programming | Symbolic FORTH</title>
+<link rel="stylesheet" href="/programming.css">
+    <meta charset="utf-8">
+</head>
+<body>
+
+<div id="header">
+  <div id="title">
+    Programming
+  </div>
+  <div id="menu">
+     <a href="index.html">Home</a>
+     <a href="testing.html">Testing</a>
+     <a href="programming.html" class="selected">Programming</a>
+     <a href="applications.html">Applications</a>
+     <a href="manual.html">Manual</a>
+     <a href="about.html">About</a>
+  </div>
+  <div id="alert"></div>
+</div>
+
+
+<div id="display">
+  <div class="infowindow" style="flex: 1 1 0;">
+    <div class="titlebar">
+      <div class="title">Canvas (600 x 400)</div>
+    </div>
+    <div class="body">
+      <canvas id="canvas"></div>
+    </div>
+  </div>
+</div>
+
+<div id="history">
+</div>
+
+<div id="dictionary">
+</div>
+
+<div id="store">
+  <div id="variables" class="infowindow">
+    <div class="titlebar">
+      <div class="title">Variables</div>
+    </div>
+    <div class="body">
+        <div class="table">
+          <div class="header">
+            <div class="row">
+              <div class="cell">Vocab</div>
+              <div class="cell">Name</div>
+              <div class="cell">Type</div>
+            </div>
+          </div>
+          <div class="body">
+          </div>
+      </div>
+    </div>
+  </div>
+  <div id="constants" class="infowindow">
+    <div class="titlebar">
+      <div class="title">Constants</div>
+    </div>
+    <div class="body">
+        <div class="table">
+          <div class="header">
+            <div class="row">
+              <div class="cell">Vocab</div>
+              <div class="cell">Name</div>
+              <div class="cell">Type</div>
+            </div>
+          </div>
+          <div class="body">
+          </div>
+      </div>
+    </div>
+  </div>
+  <div id="strings" class="infowindow">
+    <div class="titlebar">
+      <div class="title">Strings</div>
+    </div>
+    <div class="body">
+        <div class="table">
+          <div class="header">
+            <div class="row">
+              <div class="cell">Name</div>
+              <div class="cell">Length</div>
+            </div>
+          </div>
+          <div class="body">
+          </div>
+      </div>
+    </div>
+  </div>
+  <div id="objects" class="infowindow">
+    <div class="titlebar">
+      <div class="title">Objects</div>
+    </div>
+    <div class="body">
+        <div class="table">
+          <div class="header">
+            <div class="row">
+              <div class="cell">Name</div>
+              <div class="cell">Type</div>
+            </div>
+          </div>
+          <div class="body">
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="stacks" class="layout-row stacks-row">
+  <div id="data" class="infowindow">
+    <div class="titlebar">
+      <div class="title">Data Stack</div>
+    </div>
+    <div class="body">
+    <div class="table">
+        <div class="header">
+          <div class="row">
+            <div class="cell index">
+              Index
+            </div>
+            <div class="cell type">
+              Type
+            </div>
+            <div class="cell value">
+              Value
+            </div>
+          </div>
+        </div>
+        <div class="body">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="return" class="infowindow">
+    <div class="titlebar">
+      <div class="title">Return Stack</div>
+    </div>
+    <div class="body">
+      <div class="table">
+        <div class="header">
+          <div class="row">
+            <div class="cell index">
+              Index
+            </div>
+            <div class="cell type">
+              Type
+            </div>
+            <div class="cell value">
+              Value
+            </div>
+          </div>
+        </div>
+        <div class="body">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="feedback" class="feedback">
+    <div id="output" class="output"></div>
+    <div id="console" class="console"></div>
+</div>
+
+
+<div id="input" class="input">
+  <form id="code_input_form">
+  <div id="code_input_history_pos">1</div>
+  <input name="code_input" id="code_input_field" focus autocomplete="off">
+  <button type="button" id="code_input_button">Run</button>
+  </form>
+</div>
+
+<script src="programming.js" type="module"></script>
+
+</body>
+
+</html>

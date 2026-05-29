@@ -1,0 +1,158 @@
+body {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    font-family: sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+#header {
+/* border: 1px solid gray; */
+flex: 0 0 2rem;
+display: flex;
+flex-direction: row;
+align-items: center;
+}
+
+#title {
+flex: 0 0 10rem;
+padding: 0.5rem;
+font-weight: bold;
+}
+
+#menu {
+flex: 1 1 0;
+display: flex;
+flex-direction: row;
+}
+
+#menu > a {
+border: 1px solid silver;
+border-radius: 0.5rem;
+padding: 0.25rem;
+margin: 0.25rem;
+flex: 0 0 auto;
+}
+
+#menu > a:hover {
+background-color: rgba(200, 200, 200, 0.4);
+}
+
+#menu > a.selected {
+background-color: rgba(200, 200, 200, 0.4);
+}
+
+#alert {
+background-color: orange;
+flex: 0 0 10rem;
+}
+
+
+#interaction {
+flex: 0 0 10rem;
+display: flex;
+flex-direction: row;
+min-height: 0;
+}
+
+#input {
+flex: 0 0 auto;
+display: flex;
+flex-direction: row;
+}
+
+
+#code_input_field {
+flex: 1 1 0;
+font-family: monospace;
+font-size: 110%;
+}
+
+#code_input_button {
+flex: 0 0 auto;
+}
+
+
+/*
+ */
+
+
+.feedback {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+}
+
+.feedback > .output-area {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.feedback > * > .title-area {
+    display: flex;
+    flex-direction: row;
+}
+
+
+.feedback >  * > .title-area > .left-gadgets {
+    flex: 1 1 0;
+}
+
+.feedback >  * > .title-area > .right-gadgets {
+    flex: 1 1 0;
+}
+
+.feedback >  * > .title-area > .title {
+    flex: 3 1 0;
+    font-weight: bold;
+    text-align: center;
+    background-color: rgb(200, 200, 200);
+    padding: 0.25rem;
+    border: 1px solid gray;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.feedback > .output-area > .output {
+    flex: 1 1 0;
+    background-color: rgba(230, 230, 230, 1);
+    color: black;
+    border: 1px solid gray;
+    font-family: monospace;
+    white-space: pre;
+    overflow-y: scroll !important;
+}
+
+.feedback > .console-area {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.feedback > .console-area> .console {
+    flex: 1 1 0;
+    background-color: black;
+    color: lime;
+    border: 1px solid gray;
+    font-family: monospace;
+    white-space: pre;
+    overflow-y: scroll;
+}
+
+.feedback .console {
+    flex: 1 1 0;
+    background-color: black;
+    color: lime;
+    border: 1px solid gray;
+    font-family: monospace;
+    white-space: pre;
+    overflow-y: scroll;
+}

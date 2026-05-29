@@ -1,0 +1,117 @@
+" ------------------------" PRINTLN
+" Welcome to Symbolc FORTH" PRINTLN
+STR '------------------------' PRINTLN
+
+( test vars )
+
+100 VAR bar
+
+" VAR bar should be 100: " PRINT bar @ PRINTLN
+
+( now set it to something different )
+200 bar !
+" VAR bar should now be 200: " PRINT bar @ PRINTLN
+
+( this is a comment )
+
+" And this is a string" PRINTLN
+
+10 stack::create VAR foo
+
+" stack created" PRINTLN
+
+" hi" foo @ stack::push
+
+" item pushed" PRINTLN
+
+123 foo @ stack::push
+
+" another item pushed" PRINTLN
+
+" Stack size should be 2: " PRINT
+foo @ stack::size PRINTLN
+
+" Top stack item should be 123: " PRINT
+foo @ stack::pop PRINTLN
+
+" Stack size should now be 1: " PRINT
+foo @ stack::size PRINTLN
+
+" Top stack item should be hi: " PRINT
+foo @ stack::pop PRINTLN
+
+" Stack size should now be 0: " PRINT
+foo @ stack::size PRINTLN
+
+
+" Now try nexted IFs..." PRINTLN
+
+false IF
+    " should not see this" PRINTLN
+ELSE
+    true IF
+        " good" PRINTLN
+        BREAK
+    ELSE
+        " bad 1" PRINTLN
+        true IF
+        THEN
+    THEN
+    " bad 1" PRINTLN
+THEN
+
+
+
+false IF
+    " should not see this" PRINTLN
+ELSE
+    true IF
+        " good" PRINTLN
+        BREAK
+        " bad" PRINTLN
+    ELSE
+        " bad 1" PRINTLN
+        true IF
+        THEN
+    THEN
+    " great!" PRINTLN
+THEN
+" " PRINTLN
+
+
+" now try SWAP" PRINTLN
+1 2
+" top should be 2: " PRINT DUP PRINTLN
+SWAP
+" top should now be 1: " PRINT DUP PRINTLN
+DROP DROP
+
+
+
+" ------------------------" PRINTLN
+" Now for some locals "     PRINTLN
+" ------------------------" PRINTLN
+
+: test2
+  100 LOCAL foo
+  " outer foo should be 100: " PRINT
+  LOCAL@ foo PRINTLN
+
+  200 LOCAL! foo
+  " inner foo should now be 200: " PRINT
+  LOCAL@ foo PRINTLN
+;
+
+: test1
+  1 LOCAL foo
+  " inner foo should be 1: " PRINT
+  LOCAL@ foo PRINTLN
+
+  2 LOCAL! foo
+  " inner foo should now be 2: " PRINT
+  LOCAL@ foo PRINTLN
+
+  test2
+;
+
+test1

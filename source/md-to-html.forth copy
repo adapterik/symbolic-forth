@@ -1,0 +1,150 @@
+STR --------------------------" PRINTLN
+STR Markdown to HTML Converter" PRINTLN
+STR in Symbolic FORTH"          PRINTLN
+STR --------------------------" PRINTLN
+STR " PRINTLN
+
+(
+In this simple markdown-to-html translator we use a simple, restricted model
+of markdown.
+
+Each markdown block element is a single line of text. The first word of that
+line indicates the markdown formatting command. The rest of the line is the
+content, or the subject of the formatting command.
+
+One exception is the paragraph -- if the first word doees not correspond to
+a formatting command, the default paragraph formatting command is used, and
+the first word is joined with the rest of the line as the content.
+
+For example:
+
+# My Title
+
+is an H1 header with the content "My Title"
+
+In-line formatting is accompblished with a secondary process which inspects the
+content. This is a byte-by-byte process, in which a particular sequence of
+characters triggers a similar formatting context process, with a particular
+sequence of characters terminating it.
+
+E.g.
+
+This is a __paragraph__ of "text".
+
+In this case the initial __ triggers the "string" formatting context, ending
+with the second __, resulting in the word "paragraph" being displayed within
+the "strong" tag, like <strong>paragraph</strong>. The quoted "text" is just
+plain text because the double-quote " is not a formatting command.
+
+---------------------------------
+
+To run the formatter you need a javascript runtime installed. I use
+QuickJS, thus:
+
+qjs sf.js md-to-html.forth manual/intro.md
+
+---------------------------------
+
+See https://daringfireball.net/projects/markdown/
+
+)
+
+" here?" println
+
+( ---------------------------------- )
+( Set up global variables )
+( ---------------------------------- )
+
+( not that since all command line arguments are available on this stack
+  this has the effect of putting the first argument into the input_file
+  variable )
+
+VAR input_file
+" here?" println
+
+" Argument: " PRINT input_file @ PRINTLN
+
+(
+
+input_file @ file::load VAR contents
+
+contents @ string::length VAR file_len
+
+A[ " File is " file_len @ "  bytes long" ] PRINTLN
+
+)
+
+
+( here is what we do:
+  begin loop
+    get the next word
+    if the word is recognized
+      run it
+    if the word is not, assume it is a paragraph
+      output the entire line as a paragraph
+  end loop
+  later we will implement in-line stuff
+)
+
+
+( what was I thinking here? )
+null VAR line-context
+
+
+( what is this for? )
+0 VAR content-position
+
+( ---------------------------------- )
+( Words
+( ---------------------------------- )
+
+: header1
+
+~header1 line-context !
+
+" <h1>" PRINT
+
+( echo rest of line to output )
+
+" </h1>" PRINT
+
+null line-context !
+;
+
+( ---------------------------------- )
+( Main program )
+( ---------------------------------- )
+
+" Converting file: " PRINT input_file @ PRINTLN
+
+input_file @ file::open VAR file_handle
+
+" Got file: " PRINT file_handle @ PRINTLN
+
+0 var items
+
+BEGIN
+  file_handle @ file::get-word VAR the_word
+
+  a[ " Word is:" the_word @ ] PRINTLN
+
+  the_word @ typeof " null" S= IF
+    " We are done!" PRINTLN
+    BREAK
+  THEN
+
+  file_handle @ file::get-line VAR the_line
+
+  items !inc
+
+  a[ " Line: " items @ " , " the_line @ string::length ] PRINTLN
+
+  " " println
+
+  items @ 10 = IF exit THEN
+
+REPEAT
+
+" Done!" PRINTLN
+
+file_handle @ file::close

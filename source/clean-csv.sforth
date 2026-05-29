@@ -1,0 +1,293 @@
+( ---------------------------------- )
+( Setup - e.g. globals, messages.    )
+( ---------------------------------- )
+
+VAR input-file
+
+
+input-file @ FILE::OPEN VAR file-handle
+
+
+10 STACK::CREATE VAR mode-stack
+
+~normal mode-stack @ STACK::PUSH
+
+( we read character by character, because a column may have a line break
+  if it is a delimited string )
+
+: read-quoted-field ( file-handle -- string|null )
+  LOCAL file-handle
+  0 ARRAY::NCREATE LOCAL strings
+
+  ( TODO: handle embedded double quotes )
+  A[ 34 ] LOCAL@ file-handle FILE::GET-UNTIL-CODE
+  0 = IF
+    DROP
+    ( TODO: we need to throw an exception here, I think )
+    null
+  THEN
+
+  ( now we need to get up to the comma )
+  A[ 44 10 ] LOCAL@ file-handle FILE::GET-UNTIL-CODE
+  ( we don't need the result, so get rid of it )
+  SWAP DROP
+  DUP 0 = IF
+    DROP
+    ~ EOF
+  ELSE
+    10 = IF
+      ~EOL
+    ELSE
+      ~OK
+    THEN
+  THEN
+;
+
+( ---------------------------------------- )
+( Read the text up to the next comma       )
+( ---------------------------------------- )
+: read-raw-field ( file-handle -- field:string line-status:symbol field:string )
+  LOCAL file-handle
+
+  ( that is, comma and end-of-line )
+  A[ 44 10 ] LOCAL@ file-handle FILE::GET-UNTIL-CODE
+
+  DUP 0 = IF
+    ( end of file )
+    DROP ( the matching char code )
+    ~EOF
+  ELSE
+    10 = IF
+      ( end of line )
+      ( left off here ... we need to return the line status as well as
+        any field string before the end of the line. )
+      ( the same does not apply above, since the delimiter must always be
+        hit before the end of line or file, otherwise it is an error )
+      ~EOL
+    ELSE
+      ~OK
+    THEN
+  THEN
+;
+
+0 VAR field-count
+
+0 VAR line-count
+
+: read-row ( file-handle/fd -- row/array )
+    LOCAL file-handle
+    0 ARRAY::NARRAY LOCAL row
+    BEGIN
+      file-handle @ FILE::GET-CHAR
+
+      ( end of file )
+      DUP TYPEOF " null" EQ IF
+        BREAK
+      THEN
+
+      ( end of line )
+      DUP 10 = IF
+        " EOLN" PRINTLN
+        BREAK
+      THEN
+
+      ( find the first char of the field to determine what to do next )
+      DUP STR '"' STRING::CHAR-CODE =
+      IF
+        file-handle @ read-quoted-field
+        DUP ~EOF EQ IF
+          DROP ( line status )
+          LOCAL@ row ARRAY::APPEND
+          BREAK
+        ELSE DUP ~EOL EQ IF
+          DROP ( line status )
+          LOCAL@ row ARRAY::APPEND
+          BREAK
+        THEN THEN
+        DROP ( line status )
+        LOCAL@ row ARRAY::APPEND
+      ELSE DUP STR ',' STRING::CHAR-CODE = IF
+        ( this can happen with an empty - not even a space - field )
+        DROP " " LOCAL@ row ARRAY::APPEND
+      ELSE
+        \ Otherwise, collect until the next comma or end of line
+        file-handle @ read-raw-field
+        ( TODO: This is a case where a switch would make a lot of sense )
+        DUP ~EOF EQ IF
+          DROP ( line status )
+          STRING::CONCAT
+          LOCAL@ row ARRAY::APPEND
+          BREAK
+        ELSE DUP ~EOL EQ IF
+          DROP ( line status )
+          STRING::CONCAT
+          LOCAL@ row ARRAY::APPEND
+          BREAK
+        THEN THEN
+        DROP ( line status )
+        STRING::CONCAT
+        LOCAL@ row ARRAY::APPEND
+      THEN THEN
+
+    REPEAT
+    LOCAL@ row
+;
+
+: FIX-AMOUNT ( dollar-amount/string -- simple-amount/string )
+    LOCAL dollar-amount
+
+    " " " $" LOCAL@ dollar-amount STRING::REPLACE LOCAL! dollar-amount
+    " " " ," LOCAL@ dollar-amount STRING::REPLACE LOCAL! dollar-amount
+
+    LOCAL@ dollar-amount
+;
+
+: WRAP-STRING/LOCAL ( field/string -- field/string )
+  LOCAL value
+
+   " ," LOCAL@ value STRING::CONTAINS IF
+     A[ STR '"' LOCAL@ value STR '"' ] " " STRING::INTERPOLATE
+   ELSE
+     LOCAL@ value
+   THEN
+;
+
+: WRAP-STRING ( field/string -- field/string )
+   DUP " ," SWAP STRING::CONTAINS IF
+     ( this little funny big needs to shift the string to be wrapped
+       into the midst of the stack items, thus the swapping
+       it might be clearer, or perhaps not, to have an nswap where we can
+       reach down into the stack N levels to swap that item to the top...
+       or perhaps a bookmark function that lets us mark the top item,
+       then swap it later to the top when it has been buried.
+      )
+     \       ~| SWAP STR '"' SWAP STR '"' ~| STRING::JOIN
+     # SWAP STR '"' SWAP STR '"' STRING::JOIN
+   THEN
+;
+
+: WRAP-DATE
+  ( just let be bare? DO we need to reformat? )
+;
+
+: WRAP-NUMBER
+  ( convert to real number? We may need different types of numbers
+    like monetary, integer, float, fixed-point )
+  FIX-AMOUNT
+;
+
+( The below is an example of a word which uses locals rather than stack
+  it is actually shorter than the stack version, though more busy.
+  Oh, now let us try one where the local words are just shorter...)
+: WRAP-TYPE/LOCALS ( type/symbol field/string -- field/string|number )
+  LOCAL value
+  LOCAL type
+
+  LOCAL@ type ~string EQ IF
+     LOCAL@ value WRAP-STRING
+  ELSE LOCAL@ type ~date EQ IF
+    LOCAL@ value WRAP-DATE
+  ELSE LOCAL@ type ~number EQ IF
+    LOCAL@ value WRAP-NUMBER
+  THEN THEN THEN
+;
+
+: WRAP-TYPE/LOCALS2 ( type/symbol field/string -- field/string|number )
+  LOCAL value
+  LOCAL type
+
+  L@ type ~string EQ IF
+     L@ value WRAP-STRING
+  ELSE L@ type ~date EQ IF
+    L@ value WRAP-DATE
+  ELSE L@ type ~number EQ IF
+    L@ value WRAP-NUMBER
+  THEN THEN THEN
+;
+
+: WRAP-TYPE ( type/symbol field/string -- field/string|number )
+  DUP ~string EQ IF
+     DROP
+     WRAP-STRING
+  ELSE DUP ~date EQ IF
+    DROP
+    WRAP-DATE
+  ELSE DUP ~number EQ IF
+    DROP
+    WRAP-NUMBER
+  ELSE
+    ( raise exception! )
+  THEN THEN THEN
+;
+
+
+\  : WRAP-TYPE/CASE ( type/symbol field/string -- field/string|number )
+\    CASE
+\      ~string OF WRAP-STRING ENDOF
+\      ~date   OF WRAP-DATE   ENDOF
+\      ~number OF WRAP-NUMBER ENDOF
+\      ANY     OF ( raise exception ) ENDOF
+\    ENDCASE
+\  ;
+
+
+
+: WRAP-TYPE/COND ( type/symbol field/string -- field/string|number )
+  COND
+    ~string EQ OF WRAP-STRING END
+    ~date   EQ OF WRAP-DATE   END
+    ~number EQ OF WRAP-NUMBER END
+    DROP true  OF ( raise exception ) END
+  END
+;
+
+: FIX-ROW ( row/array -- row/array )
+  LOCAL row
+    0 ARRAY::NARRAY LOCAL wrapped-row
+
+    LOCAL@ row ARRAY::LENGTH LOCAL row-len
+    0 LOCAL index
+    A[ ~string ~date ~string ~string ~string ~date ~string ~number ~number ~number ~number ~number ~number ~number ~number ~number  ~string ] LOCAL types
+
+    LOCAL@ row-len 0 DO
+      LOCAL@ index LOCAL@ row ARRAY::GET ( value)
+      LOCAL@ index LOCAL@ types ARRAY::GET ( type )
+      WRAP-TYPE/COND
+      LOCAL@ wrapped-row ARRAY::APPEND
+      LOCAL@ index 1 + LOCAL! index
+    LOOP
+
+    ( don't really need to do this... )
+    LOCAL@ wrapped-row
+;
+
+BEGIN
+
+  file-handle @ read-row
+
+  DUP ARRAY::LENGTH 0 = IF
+    EXIT
+  THEN
+
+  (
+    Now we need to clean.
+    The columns 8, 12, 13, 14 have dollar amounts, but they include the
+    dollar sign and commas - not very friendly for math! So we simply remove
+    these bits
+  )
+
+  line-count @ 0 > IF
+    FIX-ROW
+  THEN
+
+  " , " STRING::INTERPOLATE
+
+  PRINTLN
+
+  line-count INC!
+
+REPEAT
+
+" Done!" PRINTLN
+
+file-handle @ file::close

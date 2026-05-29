@@ -1,0 +1,19 @@
+" ------------------------" PRINTLN
+" Welcome to Symbolc FORTH" PRINTLN
+" ------------------------" PRINTLN
+
+M{ ~key1 123 ~key2 " foo" } VAR map
+
+" map created" PRINTLN
+
+" get key1: " PRINT
+~key1 map @ MAP::GET PRINTLN
+
+" get key2: " PRINT
+~key2 map @ MAP::GET PRINTLN
+
+~hello ~key3 map @ MAP::SET
+" get key3: " PRINT
+~key3 map @ MAP::GET PRINTLN
+
+

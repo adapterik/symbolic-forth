@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Calculator | Applications | Symbolic FORTH</title>
+<link rel="stylesheet" href="calc.css">
+</head>
+<body>
+
+<div id="header">
+  <div id="title">
+    Calculator
+  </div>
+  <div id="menu">
+     <a href="/applications.html">&lt;&lt; Back to Applications</a>
+  </div>
+  <div id="alert"></div>
+</div>
+
+<div class="calculator-app">
+  <div class="calculator-col">
+  <div class="calculator" id="calculator">
+    <div class="display" id="display">
+      <div class="row-1">row 1</div>
+      <div class="row-2">row 2</div>
+      <div class="row-3">row 3</div>
+      <div class="row-4" field="buffer"></div>
+    </div>
+    <div class="keyboard">
+      <div class="row">
+        <div class="key small" key="menu1">^</div>
+        <div class="key small" key="menu2">^</div>
+        <div class="key small" key="menu3">^</div>
+        <div class="key small" key="menu4">^</div>
+        <div class="key small" key="menu5">^</div>
+        <div class="key small" key="menu6">^</div>
+      </div>
+      <div class="row">
+        <div class="key small" key="A">A</div>
+        <div class="key small" key="B">B</div>
+        <div class="key small" key="C">C</div>
+        <div class="key small" key="D">D</div>
+        <div class="key small" key="E">E</div>
+        <div class="key small" key="F">F</div>
+      </div>
+      <div class="row">
+        <div class="key small" key="A">A</div>
+        <div class="key small" key="B">B</div>
+        <div class="key small" key="C">C</div>
+        <div class="key small" key="D">D</div>
+        <div class="key small" key="E">E</div>
+        <div class="key small" key="F">F</div>
+      </div>
+      <div class="row">
+        <div class="key large" key="enter">ENTER</div>
+        <div class="key small" key="xy">x⮀y</div>
+        <div class="key small" key="plusminus">+/-</div>
+        <div class="key small" key="exponent">E</div>
+        <div class="key small" key="clear">🠜</div>
+      </div>
+      <div class="row">
+        <div class="key small" key="up">▲</div>
+        <div class="key normal number" key="7">7</div>
+        <div class="key normal number" key="8">8</div>
+        <div class="key normal number" key="9">9</div>
+        <div class="key normal" key="divide">÷</div>
+      </div>
+      <div class="row">
+        <div class="key small" key="down">▼</div>
+        <div class="key normal number" key="4">4</div>
+        <div class="key normal number" key="5">5</div>
+        <div class="key normal number" key="6">6</div>
+        <div class="key normal" key="multiply">×</div>
+      </div>
+      <div class="row">
+        <div class="key small" key="shift">SHF</div>
+        <div class="key normal number" key="1">1</div>
+        <div class="key normal number" key="2">2</div>
+        <div class="key normal number" key="3">3</div>
+        <div class="key normal" key="subtract">-</div>
+      </div>
+      <div class="row">
+        <div class="key small" key="power">EXIT</div>
+        <div class="key normal number" key="0">0</div>
+        <div class="key normal number" key=".">.</div>
+        <div class="key normal" key="enter">r/s</div>
+        <div class="key normal" key="add">+</div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="calculations">
+    <div class="program-col">
+      <div class="buffer-row">
+        buffer
+        <input type="text" autocomplete="off" id="buffer">
+      </div>
+      <div class="code-row">
+      code
+      <code id="code_history"></code>
+      </div>
+    </div>
+    <div class="stack-col" id="stack">
+      <div class="header">
+        <div class="title">stack</div>
+        <div class="count"></div>
+      </div>
+      <div class="items" id="stack-items">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="input">
+  <form id="code_input_form">
+  <div id="code_input_history_pos">1</div>
+  <input name="code_input" id="code_input_field" focus autocomplete="off">
+  <button type="button" id="code_input_button">Run</button>
+  </form>
+</div>
+<div class="feedback">
+    <div class="output" id="output"></div>
+    <div class="console" id="console"></div>
+</div>
+
+
+<script src="calc.js" type="module"></script>
+
+</body>
+
+</html>
