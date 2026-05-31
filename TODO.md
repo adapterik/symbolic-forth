@@ -41,3 +41,7 @@ Make case insensitive
 ## Docs
 
 Start documenting our design, ideas, differences from Forth, lack of understanding of Forth, and so on, and so ____.
+
+## Performance
+
+Make a performance suite - testing is not the place to do it.

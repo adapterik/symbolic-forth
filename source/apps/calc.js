@@ -38,10 +38,10 @@ function setup_code_input(forth) {
             forth.interpreter.run(code_text);
             add_to_code_history(code_text);
             const elapsed = Date.now() - start;
-            forth.console('Ok.');
+            forth.ui.console('Ok.');
         } catch (ex) {
-            forth.console(`Error! ${ex.message}`);
-            console.error(`Error! ${ex.message}`);
+            forth.ui.console(`Error! ${ex.message}`);
+            // console.error(`Error! ${ex.message}`);
         }
 
         history.push(code_text);

@@ -5,10 +5,10 @@
 VAR input-file
 
 
-input-file @ FILE::OPEN VAR file-handle
+input-file @ FILE::OPEN VARIABLE file-handle
 
 
-10 STACK::CREATE VAR mode-stack
+10 STACK::CREATE VARIABLE mode-stack
 
 ~normal mode-stack @ STACK::PUSH
 
@@ -70,9 +70,9 @@ input-file @ FILE::OPEN VAR file-handle
   THEN
 ;
 
-0 VAR field-count
+0 VARIABLE field-count
 
-0 VAR line-count
+0 VARIABLE line-count
 
 : read-row ( file-handle/fd -- row/array )
     LOCAL file-handle

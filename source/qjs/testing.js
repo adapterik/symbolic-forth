@@ -1,5 +1,5 @@
 // import {forth_new, forth_input_code, forth_compile_tokens, forth_run_programx} from "./forth.js";
-import * as F from '../lang/forth2.js';
+import * as F from '../lang/forth-qjs.js';
 // import {init as init_exp} from "/lang/vocabulary_exp.js";
 
 import CoreVocabulary from "../lang/vocabulary_core.js";
@@ -23,6 +23,8 @@ import AddCompileInterpTests from '../tests/compile_interp_tests.js';
 import AddMathTests from '../tests/math_tests.js';
 import AddLocalTests from '../tests/local_tests.js';
 import AddSymbolTests from '../tests/symbol_tests.js';
+import AddVarTests from '../tests/var_tests.js';
+import AddConstTests from '../tests/const_tests.js';
 
 class Testing {
     constructor() {
@@ -79,6 +81,7 @@ class Testing {
         TestVocabulary(forth, {fresh: true});
         ArrayVocabulary(forth, {fresh: true});
         StringVocabulary(forth, {fresh: true});
+        TimeVocabulary(forth, {fresh: true});
         // SymbolVocabulary(forth, {fresh: true});
 
         forth.interpreter.add_code(test.code);
@@ -146,6 +149,10 @@ class Testing {
             });
             console.log('---------------------------------------------------------');
         });
+
+        console.log('TOTALS');
+        console.log('Successes: ', this.test_data.tests.successes);
+        console.log('Failures: ', this.test_data.tests.failures);
     }
 }
 
@@ -162,6 +169,8 @@ function main() {
     AddCompileInterpTests(testing);
     AddMathTests(testing);
     AddSymbolTests(testing);
+    AddVarTests(testing);
+    AddConstTests(testing);
 
     testing.run_tests();
 }

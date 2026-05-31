@@ -2,7 +2,7 @@
 " Welcome to Symbolc FORTH" PRINTLN
 " ------------------------" PRINTLN
 
-M{ ~key1 123 ~key2 " foo" } VAR map
+M{ ~key1 123 ~key2 " foo" } VARIABLE map
 
 " map created" PRINTLN
 

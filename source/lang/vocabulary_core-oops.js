@@ -55,50 +55,52 @@ function typeof_word() {
  * We may in the future move completely to symbols for variables and
  * constants, as well as using symbols for their name property.
  **/
-function pop_symbol_or_string(f) {
-    const {type, value} = f.parameter_stack.pop();
-    if (type === 'string') {
-        return f.dictionary.parse_token(f.strings.get(value));
-    } else if (type === 'symbol') {
-        return f.symbols.get(value);
-    } else {
-        throw new Error(`variable ref must be string or symbol, is: '${type}'`);
-    }
-}
-
 function var_word({interpreter}) {
     const f = interpreter.forth;
     // Look, ma, no compile-time behavior!
     return () => {
-        const {vocabulary, name} = pop_symbol_or_string(f);
-
-        const variableValue = f.parameter_stack.pop();
+        const {vocabulary, name} = f.dictionary.parse_token(f.pop_symbol().name);
+        const value = f.parameter_stack.pop();
 
         // Since we don't create a word to embed the variable id,
         // we ignore the return value.
-        f.variables.create(vocabulary, name, variableValue);
+        f.variables.create(vocabulary, name, value);
     }
 }
 
 function var_fetch_word({interpreter}) {
     const f = interpreter.forth;
     return () => {
-        const {vocabulary, name} = pop_symbol_or_string(f);
+        const {type, value} = f.parameter_stack.pop();
+        let variableRef;
+        if (type === 'string') {
+            variableRef = f.strings.get(value);
+        } else if (type === 'symbol') {
+            variableRef = f.symbols.get(value).name;
+        } else {
+            throw new Error(`variable ref must be string or symbol, is: '${type}'`);
+        }
 
-        const value = f.variables.getNamed(vocabulary, name);
-
-        f.parameter_stack.push(value);
+        const {vocabulary, name} = f.dictionary.parse_token(variableRef);
+        const variable = f.variables.getNamed(vocabulary, name);
+        f.parameter_stack.push(variable.value);
     }
 }
 
 function var_store_word({interpreter}) {
     const f = interpreter.forth;
     return () => {
-        const {vocabulary, name} = pop_symbol_or_string(f);
-
-        const value = f.parameter_stack.pop();
-
-        f.variables.setNamed(vocabulary, name, value);
+        const {type, value} = f.parameter_stack.pop();
+        let variableRef;
+        if (type === 'string') {
+            variableRef = f.strings.get(value);
+        } else if (type === 'symbol') {
+            variableRef = f.symbols.get(value).name;
+        } else {
+            throw new Error(`variable ref must be string or symbol, is: '${type}'`);
+        }
+        const variableValue = f.parameter_stack.pop();
+        f.variables.setNamed(vocabulary, name, variableValue);
     }
 }
 
@@ -114,80 +116,59 @@ function variable_word({interpreter, forth}) {
     // variable!
     // Also, we always create variables in the current context. This means that
     // global variables need to be set ... in the global (top level) context!
-    // forth.currentContext().variables.create(vocabulary, name, forth.null_value());
+    // forth.currentContext().vari
+    // symbol VAR
+
+    /**
+     * Implements the VAR word
+     *
+     * This version of a variable uses a symbol to access the variable.
+     * Thus we write 10 ~myvar VAR to create and set the variable named
+     * "myvar" to the numeric value "10".
+     * The words VAR@ and VAR! are used to, respectively, fetch and set
+     * the value of the given var.
+     * This is in support of the "symbolic" nature of this forth.
+     * We may in the future move completely to symbols for variables and
+     * constants, as well as using symbols for their name property.
+     **/
+    function svar_word({interpreter}) {
+        const f = interpreter.forth;
+        // Look, ma, no compile-time behavior!
+        return () => {
+            const {vocabulary, name} = f.dictionary.parse_token(f.pop_symbol().name);
+            const value = f.parameter_stack.pop();
+
+            // Since we don't create a word to embed the variable id,
+            // we ignore the return value.
+            f.variables.create(vocabulary, name, value);
+        }
+    }
+
+    function svar_fetch_word({interpreter}) {
+        const f = interpreter.forth;
+        return () => {
+            const {vocabulary, name} = f.dictionary.parse_token(f.pop_symbol().name);
+            const {value} = f.variables.getNamed(vocabulary, name);
+            f.parameter_stack.push(value);
+        }
+    }
+
+    function svar_store_word({interpreter}) {
+        const f = interpreter.forth;
+        return () => {
+            const {vocabulary, name} = f.dictionary.parse_token(f.pop_symbol()).name;
+            const value = f.parameter_stack.pop();
+            f.variables.setNamed(vocabulary, name, value);
+        }
+    }
+
+    ables.create(vocabulary, name, forth.null_value());
     const var_id = forth.variables.create(vocabulary, name, forth.null_value());
-    forth.variables.createWord(vocabulary, name);
     return () => {
         const initialValue = forth.parameter_stack.pop(forth);
         forth.variables.set(var_id, initialValue);
     }
 }
-
-// function variable_word({interpreter, forth}) {
-//     const variable_ref = interpreter.next_input_token();
-//     if (!variable_ref) {
-//         return interpeter.error(`Sorry, '${type}' no variable name provided`);
-//     }
-//     const {vocabulary, name} = forth.dictionary.parse_token(variable_ref);
-//     // we need to create the variable here because as we parse ahead, we need
-//     // the variable word to be defined... it just won't be set correctly
-//     // yet in case any cheeky compile-time-executing goes on referencing the
-//     // variable!
-//     // Also, we always create variables in the current context. This means that
-//     // global variables need to be set ... in the global (top level) context!
-//     // forth.currentContext().vari
-//     // symbol VAR
-//
-//     /**
-//      * Implements the VAR word
-//      *
-//      * This version of a variable uses a symbol to access the variable.
-//      * Thus we write 10 ~myvar VAR to create and set the variable named
-//      * "myvar" to the numeric value "10".
-//      * The words VAR@ and VAR! are used to, respectively, fetch and set
-//      * the value of the given var.
-//      * This is in support of the "symbolic" nature of this forth.
-//      * We may in the future move completely to symbols for variables and
-//      * constants, as well as using symbols for their name property.
-//      **/
-//     function svar_word({interpreter}) {
-//         const f = interpreter.forth;
-//         // Look, ma, no compile-time behavior!
-//         return () => {
-//             const {vocabulary, name} = f.dictionary.parse_token(f.pop_symbol().name);
-//             const value = f.parameter_stack.pop();
-//
-//             // Since we don't create a word to embed the variable id,
-//             // we ignore the return value.
-//             f.variables.create(vocabulary, name, value);
-//         }
-//     }
-//
-//     function svar_fetch_word({interpreter}) {
-//         const f = interpreter.forth;
-//         return () => {
-//             const {vocabulary, name} = f.dictionary.parse_token(f.pop_symbol().name);
-//             const {value} = f.variables.getNamed(vocabulary, name);
-//             f.parameter_stack.push(value);
-//         }
-//     }
-//
-//     function svar_store_word({interpreter}) {
-//         const f = interpreter.forth;
-//         return () => {
-//             const {vocabulary, name} = f.dictionary.parse_token(f.pop_symbol()).name;
-//             const value = f.parameter_stack.pop();
-//             f.variables.setNamed(vocabulary, name, value);
-//         }
-//     }
-//
-//     ables.create(vocabulary, name, forth.null_value());
-//     const var_id = forth.variables.create(vocabulary, name, forth.null_value());
-//     return () => {
-//         const initialValue = forth.parameter_stack.pop(forth);
-//         forth.variables.set(var_id, initialValue);
-//     }
-// }
 
 function variable_store_word({interpreter, forth}) {
     // const variable_ref = interpreter.next_input_token();
@@ -847,7 +828,6 @@ function numeric_comparison(forth, operation_label, operation) {
 
     switch (value1.type) {
         case 'number':
-            // console.log('comparison', value1.value, value2.value, operation(value1.value, value2.value));
             forth.parameter_stack.push(forth.bool_value(operation(value1.value, value2.value)));
             break;
         default:
@@ -926,9 +906,10 @@ function swap_word({forth}) {
     };
 }
 
-function npick_word({forth}) {
+function move_word({forth}) {
     return () => {
-        forth.parameter_stack.move(forth.pop_number());
+        const movePosition = forth.pop_number();
+        forth.parameter_stack.move(movePosition);
     };
 }
 
@@ -979,7 +960,7 @@ function return_stack_size_word({forth}) {
 
 function stackmark_word({forth}) {
     return () => {
-        const symbol = forth.symbols.use_or_create('', 'stackmark');
+        const symbol = forth.symbols.create('stackmark');
         // actually, I don't think we'll evern need to use the stack mark
         // because the symbol itself is the stack mark...
         symbol.setProp('stackmark', true);
@@ -1005,26 +986,6 @@ function noop_token_word () {
     return null;
 }
 
-/**
- * A macro is pure compile-time which produces code which is in turn injected
- * into the interpreter for compilation...
- *
- * Macros are used for syntactic sugar.
- *
- * For instance, a CONST is just a word that produces a value. It cannot be
- * modified because it is a word. But it is nicer to write
- *
- * CONST 10 foo
- *
- * than
- *
- * : foo 10 ;
- *
- * or is it?
- **/
-function macro_word() {
-}
-
 let run_count = 0;
 
 const CoreVocabulary = (forth, options = {}) => {
@@ -1043,7 +1004,7 @@ const CoreVocabulary = (forth, options = {}) => {
     // Parameter stack
     forth.add_word('', "DUP", dup_word);
     forth.add_word('', "SWAP", swap_word);
-    forth.add_word('', 'NPICK', npick_word);
+    forth.add_word('', 'MOVE', move_word);
     forth.add_word('', "DROP", drop_word);
     forth.add_word('', 'DEPTH', depth_word);
     forth.add_word('', '#', stackmark_word);
@@ -1138,9 +1099,9 @@ const CoreVocabulary = (forth, options = {}) => {
     forth.add_word('', 'SYM', symbol_word);
     forth.add_word('SYMBOL', 'NAME', symbol_name_word);
 
-    // forth.add_word('', 'SVAR', var_word);
-    // forth.add_word('', 'SVAR@', var_fetch_word);
-    // forth.add_word('', 'SVAR!', var_store_word);
+    forth.add_word('', 'SVAR', var_word);
+    forth.add_word('', 'SVAR@', var_fetch_word);
+    forth.add_word('', 'SVAR!', var_store_word);
 
     // Construction
     forth.add_word('', ':', colon_word);
@@ -1153,7 +1114,7 @@ const CoreVocabulary = (forth, options = {}) => {
     // environment manipulation...
     forth.add_word('', 'RESET', reset_word);
 
-    forth.add_word('', 'MACRO', macro_word);
+
 
 }
 

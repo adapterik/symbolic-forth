@@ -2,7 +2,7 @@
  * This is a minimal Symbolic FORTH runner which runs in quickjs, and probably
  * other Javascript runtimes
  **/
-import * as F from "./lang/forth2.js";
+import * as F from "./lang/forth-qjs.js";
 import CoreVocabulary from "./lang/vocabulary_core.js";
 import IOVocabulary from "./lang/vocabulary_io.js";
 import MathVocabulary from "./lang/vocabulary_math.js";

@@ -4,7 +4,7 @@ const TEST_STRING_1 = `
 " VALUE1" " VALUE2" S= test::assert_false
 
 ( define the variable 's' )
-" foo" VAR foo_string
+" foo" VARIABLE foo_string
 
 ( Wait, is it really a string? )
 foo_string @ TYPEOF " string" S= test::assert_true

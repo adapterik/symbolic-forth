@@ -1,5 +1,6 @@
 class ForthSymbol {
-    constructor({name, id}) {
+    constructor({vocabulary, name, id}) {
+        this.vocabulary = vocabulary;
         this.name = name;
         this.id = id;
         this.properties = {};
@@ -9,8 +10,8 @@ class ForthSymbol {
         this.properties[propName] = value;
     }
 
-    getProp(name) {
-        return this.properties[name];
+    getProp(propName) {
+        return this.properties[propName];
     }
 
     hasProp(name) {
@@ -19,7 +20,9 @@ class ForthSymbol {
 }
 
 export default class ForthSymbols {
-    constructor() {
+    constructor(forth) {
+        this.forth = forth;
+
         this.initialize();
     }
 
@@ -32,8 +35,8 @@ export default class ForthSymbols {
     reset() {
         this.initialize();
     }
-
-    create(name) {
+/*
+    create(vocabulary, name) {
         const existing = this.symbols_map[name];
         if (existing) {
             return existing;
@@ -44,13 +47,53 @@ export default class ForthSymbols {
         this.symbols_map[name] = symbol;
         return symbol;
     }
+    */
+
+    make(vocabulary, name) {
+        if (!(vocabulary in this.symbols_map)) {
+            this.symbols_map[vocabulary] = {};
+        }
+
+        this.last_id += 1;
+        const symbol = new ForthSymbol({vocabulary, name, id: this.last_id});
+        this.symbols[symbol.id] = symbol;
+
+        this.symbols_map[vocabulary][name] = symbol.id;
+        return symbol
+    }
+
+    use_or_create(vocabulary, name) {
+        if (vocabulary in this.symbols_map) {
+            if (name in this.symbols_map[vocabulary]) {
+                return this.get(this.symbols_map[vocabulary][name]);
+            }
+        }
+        return this.make(vocabulary, name);
+    }
+
+    create(vocabulary, name) {
+        if (vocabulary in this.symbols_map) {
+            if (name in this.symbols_map[vocabulary]) {
+                throw new Error(`symbol '${vocabulary}::${name}' already exists'`);
+            }
+        }
+
+        return this.make(vocabulary, name);
+    }
 
     get(id) {
         return this.symbols[id];
     }
 
-    getByName(name) {
-        return this.symbols_map[name];
+    getByName(vocabulary, name) {
+        if (!(vocabulary in this.symbols_map)) {
+            throw new Error(`no symbols in vocabulary '${vocabulary}'`);
+        }
+        if (!(name in this.symbols_map[vocabulary])) {
+            throw new Error(`no symbol named '${name}' in vocabulary '${vocabulary}'`);
+        }
+
+        return this.get(this.symbols[vocabulary][name]);
     }
 
 }

@@ -58,9 +58,9 @@ See https://daringfireball.net/projects/markdown/
 
 (
 
-input_file @ file::load VAR contents
+input_file @ file::load VARIABLE contents
 
-contents @ string::length VAR file_len
+contents @ string::length VARIABLE file_len
 
 A[ " File is " file_len @ "  bytes long" ] PRINTLN
 
@@ -84,11 +84,11 @@ A[ " File is " file_len @ "  bytes long" ] PRINTLN
 ( ---------------------------------- )
 
 ( what was I thinking here? )
-null VAR line-context
+null VARIABLE line-context
 123
 
 ( what is this for? )
-0 VAR content-position
+0 VARIABLE content-position
 
 ( ----------------------------------
               Words
@@ -114,7 +114,7 @@ null VAR line-context
 ;
 
 
-null VAR mode
+null VARIABLE mode
 
 : set-mode
   mode !
@@ -174,9 +174,9 @@ null VAR mode
   " </p>" " <p>"
 ;
 
-10 stack::create VAR mode-stack
+10 stack::create VARIABLE mode-stack
 
-null VAR mode
+null VARIABLE mode
 
 : emit-h1-tag
   " <H1>" PRINT
@@ -313,15 +313,15 @@ VAR input-file
 " Converting file: " PRINT input-file @ PRINTLN
 
 ( Open the input file and save the file handle for later. )
-input-file @ FILE::OPEN VAR file-handle
+input-file @ FILE::OPEN VARIABLE file-handle
 
-0 VAR items
+0 VARIABLE items
 
 ~normal mode-stack @ STACK::PUSH
 
 BEGIN
   ( get the first word in the file and save it )
-  file-handle @ FILE::GET-WORD VAR the-word
+  file-handle @ FILE::GET-WORD VARIABLE the-word
 
   ( If we attempt to get a word and that would take us past the end of the
     file, null is put on the stack instead of the word )
@@ -330,9 +330,9 @@ BEGIN
     EXIT
   THEN
 
-  file_handle @ FILE::GET-LINE VAR the-line
+  file_handle @ FILE::GET-LINE VARIABLE the-line
 
-  the-word @ token-to-word VAR token-word
+  the-word @ token-to-word VARIABLE token-word
 
   token-word @ typeof " null" S= IF
     A[ " <P>" the-word @ "  " the-line @ " </P>" ] PRINTLN

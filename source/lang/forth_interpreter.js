@@ -57,9 +57,9 @@ export default class ForthInterpreter {
             // In 'debug' mode, though, we leave everything alone so the programmer
             // can inspect the state of the system.
             // const dot_element = document.getElementById('info');
-            this.forth.console(message);
-            this.forth.console('Re-initializing system to the starting state.');
-            this.forth.console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
+            this.forth.ui.console(message);
+            this.forth.ui.console('Re-initializing system to the starting state.');
+            this.forth.ui.console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
             // dot_element.innerHTML += `<div class="error">Error: ${message}</div>`;
             // this.initialize();
             this.state = 'error';

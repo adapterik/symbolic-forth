@@ -4,19 +4,19 @@ STR '------------------------' PRINTLN
 
 ( test vars )
 
-100 VAR bar
+100 VARIABLE bar
 
-" VAR bar should be 100: " PRINT bar @ PRINTLN
+" VARIABLE bar should be 100: " PRINT bar @ PRINTLN
 
 ( now set it to something different )
 200 bar !
-" VAR bar should now be 200: " PRINT bar @ PRINTLN
+" VARIABLE bar should now be 200: " PRINT bar @ PRINTLN
 
 ( this is a comment )
 
 " And this is a string" PRINTLN
 
-10 stack::create VAR foo
+10 stack::create VARIABLE foo
 
 " stack created" PRINTLN
 

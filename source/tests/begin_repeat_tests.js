@@ -2,10 +2,10 @@
 
 const TEST_1 = `
 ( we will count down from 5 to 0 )
-5 VAR countdown
+5 VARIABLE countdown
 
 ( we'll also use a loop counter to test for afterwards )
-0 VAR loop_count
+0 VARIABLE loop_count
 
 ( here is how we begin our repeating section )
 BEGIN
@@ -31,12 +31,12 @@ test::assert_stack_empty
 
 const TEST_2 = `
 ( we will count down from 5 to 0 )
-5 VAR countdown
+5 VARIABLE countdown
 
 ( we'll also use a loop counter to test for afterwards )
-0 VAR loop_count
+0 VARIABLE loop_count
 
-false VAR finished_word
+false VARIABLE finished_word
 
 : looptest
   ( here is how we begin our repeating section )
@@ -67,12 +67,12 @@ test::assert_stack_empty
 
 const TEST_3 = `
 ( we will count down from 5 to 0 )
-5 VAR countdown
+5 VARIABLE countdown
 
 ( we'll also use a loop counter to test for afterwards )
-0 VAR loop_count
+0 VARIABLE loop_count
 
-false VAR finished_word
+false VARIABLE finished_word
 
 : looptest
 ( here is how we begin our repeating section )

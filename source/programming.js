@@ -166,10 +166,10 @@ function main() {
             forth.interpreter.run(code_text);
             const elapsed = Date.now() - start;
             console.log('elapsed', elapsed);
-            forth.console('Ok.');
+            forth.ui.console('Ok.');
         } catch (ex) {
-            forth.console(`Error! ${ex.message}`);
-            console.error(`Error! ${ex.message}`);
+            forth.ui.console(`Error! ${ex.message}`);
+            // console.error(`Error! ${ex.message}`);
             forth.reset();
             update_display(forth);
         }

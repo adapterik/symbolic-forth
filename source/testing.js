@@ -1,5 +1,6 @@
 // import {forth_new, forth_input_code, forth_compile_tokens, forth_run_programx} from "./forth.js";
 import * as F from '/lang/forth.js';
+import WebUI from '/lang/forth-browser.js';
 // import {init as init_exp} from "/lang/vocabulary_exp.js";
 
 import CoreVocabulary from "/lang/vocabulary_core.js";
@@ -23,6 +24,8 @@ import AddCompileInterpTests from '/tests/compile_interp_tests.js';
 import AddMathTests from '/tests/math_tests.js';
 import AddLocalTests from '/tests/local_tests.js';
 import AddSymbolTests from '/tests/symbol_tests.js';
+import AddVarTests from '../tests/var_tests.js';
+import AddConstTests from '../tests/const_tests.js';
 
 /*
  * function test_string(f) {
@@ -69,6 +72,7 @@ class Testing {
         this.CHECKMARK = '✓';
         this.CROSS = '✗';
         this.test_data = null;
+        this.ui = new WebUI();
     }
 
     render_test_set_row(name) {
@@ -180,9 +184,10 @@ class Testing {
 
     run_test(test_set, test_name) {
         const forth = new F.Forth({
-            // onInterp: update_display,
-            outputSelector: '#feedback #output',
-            consoleSelector: '#feedback #console'
+             // onInterp: update_display,
+            // outputSelector: '#feedback #output',
+            // consoleSelector: '#feedback #console'
+            ui: this.ui
         });
 
         // TODO: this should be a method to reset all vocabularies, so that we
@@ -196,6 +201,7 @@ class Testing {
         TestVocabulary(forth, {fresh: true});
         ArrayVocabulary(forth, {fresh: true});
         StringVocabulary(forth, {fresh: true});
+        TimeVocabulary(forth, {fresh: true});
         // SymbolVocabulary(forth, {fresh: true});
 
         const {code} = this.get_test(test_set, test_name);
@@ -206,8 +212,8 @@ class Testing {
 
         forth.interpreter.run();
 
-        const {value: {value: successes}} = forth.variables.get_from_name('test', 'TEST_SUCCESSES');
-        const {value: {value: failures}} = forth.variables.get_from_name('test', 'TEST_FAILURES');
+        const {value: successes} = forth.variables.getNamed('test', 'TEST_SUCCESSES');
+        const {value: failures} = forth.variables.getNamed('test', 'TEST_FAILURES');
 
         if (failures === 0 && successes > 0) {
             this.test_data.test_sets.successes += 1;
@@ -294,7 +300,8 @@ class Testing {
     }
 
     run_selected_tests() {
-        console.log('RUNNING tests...');
+        this.ui.println('RUNNING tests...');
+        this.ui.console('RUNNING tests...');
         this.reset_tests();
         const test_rows = document.querySelectorAll('.row.test');
         test_rows.forEach((test_row) => {
@@ -326,7 +333,6 @@ class Testing {
 
 }
 
-
 function main() {
     const testing = new Testing();
     testing.wire_up();
@@ -341,33 +347,8 @@ function main() {
     AddCompileInterpTests(testing);
     AddMathTests(testing);
     AddSymbolTests(testing);
-
-    // Populate the tests
-    // a..dd_test_set('string', 'String Tests');
-    // add_test('string', 'equality', 'String Test 1 - equality:', TEST_STRING_1);
-    // add_test('string', 'test', 'String Test 2 - ??', TEST_STRING_2);
-    //
-
-    //
-    // add_test('exit', 'continue', 'CONTINUE out of IF within DO..LOOP', TEST_CONTINUE_1);
-    //
-    // add_test_set('math', 'Math words');
-    // add_test('math', 'addition', 'Addition', TEST_MATH_1);
-    // add_test('math', 'subtraction', 'Subtraction', TEST_MATH_2);
-    // add_test('math', 'multiplication', 'Multiplication', TEST_MATH_3);
-    // add_test('math', 'division', 'Division', TEST_MATH_4);
-    //
-    // add_test_set('loops', 'Time for Loops!');
-    // add_test('loops', 'do_loop', 'DO..LOOP one level', TEST_DO_LOOP_1);
-    //
-    // add_test_set('colon', 'Colon word definition');
-    // add_test('colon', 'vocab', 'Word in specific vocabulary', TEST_DEFINE_WORD_1);
-    // add_test('colon', 'empty_vocab', 'Word with empty vocabulary', TEST_DEFINE_WORD_2);
-    // add_test('colon', 'no_vocab', 'Word with no vocabulary', TEST_DEFINE_WORD_3);
-
+    AddVarTests(testing);
+    AddConstTests(testing);
 }
-
-
-
 
 main();

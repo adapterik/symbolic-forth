@@ -5,9 +5,49 @@ function log(message) {
     console.log(message);
 }
 
+class TextUI {
+    constructor() {
+    }
+
+
+    output_html(el) {
+        this.println(message);
+    }
+
+
+
+    /** public interface **/
+
+
+    output_cr() {
+        print("");
+    }
+
+    output_text(message) {
+        std.printf('%s', message);
+    }
+
+    output_printf(format, params) {
+        std.printf.apply(null, [format, ...params]);
+    }
+    clear_output() {
+        this.println('NO CLEAR OUTPUT FOR NOW');
+    }
+
+    console(message) {
+        this.println(message);
+    }
+
+    clear_console() {
+        this.println('NO CLEAR OUTPUT FOR NOW');
+    }
+
+}
+
 export class Forth extends ForthBase {
     constructor(init) {
         super(init);
+        this.ui = new TextUI();
     }
 
     print(message) {

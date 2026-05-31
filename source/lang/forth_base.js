@@ -7,7 +7,7 @@ import ForthObjects from './forth_objects.js';
 import ForthDictionary from './forth_dictionary.js';
 import ForthInterpreter from './forth_interpreter.js';
 import ForthContext from './forth_context.js';
-import * as std from 'std';
+// import * as std from 'std';
 
 function log(message) {
     console.log(message);
@@ -19,9 +19,10 @@ const CF_RETURN = 'return';
 const CF_EXIT = 'exit';
 
 export default class ForthBase {
-    constructor({onInterp, outputSelector, consoleSelector, onInitialize} = {}) {
+    constructor({onInterp, onInitialize, ui} = {}) {
         this.onInterp = onInterp;
         this.onInitialize = onInitialize;
+        this.ui = ui;
         this.initialize();
     }
 
@@ -35,7 +36,7 @@ export default class ForthBase {
         this.contextStack = new ForthStack();
         this.constants = new ForthConstants(this);
         this.strings = new ForthStrings();
-        this.symbols = new ForthSymbols();
+        this.symbols = new ForthSymbols(this);
         this.objects = new ForthObjects(this);
         this.interpreter = new ForthInterpreter(this, {onInterp: this.onInterp});
 
@@ -52,7 +53,7 @@ export default class ForthBase {
     reset() {
         this.initialize();
     }
-
+/*
     output_cr() {
         print("");
     }
@@ -76,7 +77,7 @@ export default class ForthBase {
 
     clear_console() {
         this.println('NO CLEAR OUTPUT FOR NOW');
-    }
+    }*/
 
     number_value(value) {
         return {
@@ -102,12 +103,9 @@ export default class ForthBase {
     symbol_value(nameOrSymbol) {
         let symbol;
         if (typeof nameOrSymbol === 'string') {
-            symbol = this.symbols.getByName(nameOrSymbol);
-            if (!symbol) {
-                symbol = this.symbols.create(nameOrSymbol);
-            }
+            const {vocabulary, name} = this.dictionary.parse_token(nameOrSymbol);
+            symbol = this.symbols.use_or_create(vocabulary, name);
         } else {
-            // assume it is a ForthSymbol object...
             symbol = nameOrSymbol;
         }
         return {
@@ -239,14 +237,14 @@ export default class ForthBase {
     }
 
     error(message) {
-        this.console(message);
-        this.console('Re-initializing system to the starting state.');
-        this.console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
+        this.ui.console(message);
+        this.ui.console('Re-initializing system to the starting state.');
+        this.ui.console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
         this.initialize();
     }
 
     warning(message) {
-        this.println(message);
+        this.ui.println(message);
     }
 
     run(code) {

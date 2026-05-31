@@ -7,8 +7,8 @@ const TestVocabulary = (forth, options = {}) => {
   run_count += 1;
 
   forth.interpreter.run( `
-  0 VAR test::TEST_SUCCESSES
-  0 VAR test::TEST_FAILURES
+  0 VARIABLE test::TEST_SUCCESSES
+  0 VARIABLE test::TEST_FAILURES
 
   : test::assert_true
   IF

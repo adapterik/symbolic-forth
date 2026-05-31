@@ -2,7 +2,7 @@
 // const TEST_DO_LOOP_1 = `
 // " DO..LOOP Test 1 - one level loop: " . CR
 // " ----------------------------------" . CR
-// 0 VAR x
+// 0 VARIABLE x
 // 10 0 DO
 // I x !
 // LOOP
@@ -12,7 +12,7 @@
 
 
 const TEST_1 = `
-0 VAR x
+0 VARIABLE x
 5 0 DO x inc! LOOP
 
 x @ 5 = test::assert_true
@@ -21,7 +21,7 @@ test::assert_stack_empty
 `;
 
 const TEST_2 = `
-0 VAR x
+0 VARIABLE x
 5 0 DO
   x inc!
   x @ 3 = IF BREAK THEN
@@ -34,8 +34,8 @@ test::assert_stack_empty
 
 
 const TEST_3 = `
-0 VAR x
-0 VAR y
+0 VARIABLE x
+0 VARIABLE y
 5 0
 DO
   x @ 1 + x !
@@ -67,16 +67,16 @@ test::assert_stack_empty
 //     //     temp @ . CR)
 //     //     `);
 //     F.forth_add_code(f, `
-//     now VAR start
-//     0 VAR iters
+//     now VARIABLE start
+//     0 VARIABLE iters
 //     1000000 0 DO
 //     iters 1+
 //     LOOP
 //     CR
 //     " Iters = " . iters @ .
 //     CR
-//     now VAR end
-//     start @ end @ - VAR elapsed
+//     now VARIABLE end
+//     start @ end @ - VARIABLE elapsed
 //     CR
 //     " Started at " . start @ . CR
 //     " Ended at " . end @ . CR

@@ -27,12 +27,16 @@ export default class ForthVariables {
         this.variables[variable_id] = variable;
 
         this.variables_by_name[vocabulary][name] = variable_id;
+        return variable_id;
+    }
+
+    createWord(vocabulary, name) {
+        const id = this.variables_by_name[vocabulary][name];
         this.forth.add_word(vocabulary, name, ({forth}) => {
             return () => {
-                forth.parameter_stack.push({type: 'variable', value: variable_id});
+                forth.parameter_stack.push({type: 'variable', value: id});
             }
         });
-        return variable_id;
     }
 
     set(id, value) {
