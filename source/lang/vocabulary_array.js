@@ -83,20 +83,10 @@ function array_brace_word({interpreter, forth}) {
 **/
 function array_get_word({forth}) {
     return () => {
-        const {type: array_type, value: array_value} = forth.parameter_stack.pop();
+        const array = forth.pop_array();
+        const index = forth.pop_number();
 
-        const {type: index_type, value: index_value} = forth.parameter_stack.pop();
-        if (index_type !== 'number') {
-            return forth.error(`[array_get_word] expected 'number', got '${index_type}'`);
-        }
-
-        if (array_type !== 'array') {
-            return forth.error(`[array_get_word] expected 'array', got '${array_type}'`);
-        }
-
-        const value = array_value[index_value];
-
-        forth.parameter_stack.push(value);
+        forth.parameter_stack.push(array[index]);
     }
 }
 
@@ -215,13 +205,9 @@ function array_append_word({forth}) {
         array_value.push(valueToAppend);
     }
 }
-let instance = null;
+
 
 const ArrayVocabulary = (forth, options = {}) => {
-    // if (instance && !options.fresh) {
-    //     return;
-    // }
-
     forth.add_word('', 'a[', array_brace_word);
     forth.add_word('', 'a@', array_get_word);
     forth.add_word('', 'a!', array_set_word);

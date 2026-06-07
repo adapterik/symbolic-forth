@@ -20,7 +20,7 @@ const TEST_2 = `
 test::assert_stack_empty
 `;
 
-const TEST_3 = `
+const TEST_3x = `
 10 CONST x
 
 time::now VARIABLE t1
@@ -55,6 +55,18 @@ test::assert_stack_empty
 
 `;
 
+const TEST_3 = `
+10 CONST x
+
+time::now VARIABLE t1
+
+10000 0 DO
+x DROP
+LOOP
+
+
+
+`;
 export default function AddConstTests(testing) {
     testing.add_test_set('const', 'Test all CONST operations');
     testing.add_test('const', 'create', 'Create a CONST and ensure it has the same value', TEST_1);

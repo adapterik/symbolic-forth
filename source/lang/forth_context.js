@@ -4,7 +4,9 @@ export default class ForthContext {
     // static CF_BREAK = 'break';
     // static CF_RETURN = 'return';
     // static CF_EXIT = 'exit';
-    constructor() {
+    constructor({lexical, parent} = {}) {
+        this.lexical = lexical;
+        this.parent = parent;
         this.locals = {};
         // this.dictionary = {};
         // this.controlFlowLevel = cfl;
@@ -19,7 +21,11 @@ export default class ForthContext {
     }
 
     getLocal(name) {
-        return this.locals[name];
+        let value = this.locals[name];
+        if (typeof value === 'undefined' && this.lexical) {
+           value = this.parent.getLocal(name);
+        }
+        return value;
     }
 
     deleteLocal(name) {

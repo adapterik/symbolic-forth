@@ -11,20 +11,14 @@
  **/
 function context_word ({forth}) {
     return () => {
-        const {type, value} = forth.parameter_stack.pop();
-
-        if (type !== 'string') {
-            throw new Error('Sorry, canvas_context must be given a string');
-        }
-
-        const canvas_id = forth.strings.get(value);
+        const canvas_id = forth.pop_string();
 
         // see https://web.dev/articles/canvas-hidipi for this technique.
         // without this dpr + scale hack, everything in the canvas will be
         // fuzzy - especially noticable with text.
         const canvas = document.getElementById(canvas_id);
         const dpr = window.devicePixelRatio || 1;
-        console.log('dpr is', dpr);
+        // console.log('dpr is', dpr);
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
@@ -32,9 +26,8 @@ function context_word ({forth}) {
         const context = canvas.getContext("2d");
         context.scale(dpr, dpr);
 
-        const id = forth.objects.create('dom', context);
-        // forth.parameter_stack.push({type: 'object', value: id});
-        forth.constants.create('canvas', 'current_context', {type: 'object', value: id});
+        forth.parameter_stack.push(forth.object_value(context));
+        // forth.constants.create('canvas', 'current_context', {type: 'object', value: id});
     }
 }
 
@@ -48,34 +41,20 @@ function context_word ({forth}) {
  **/
 function fill_style_word ({forth}) {
     return () => {
-    const {value: string_id} = forth.parameter_stack.pop();
-    const color = forth.strings.get(string_id);
-    // const {value: context_id} = forth.parameter_stack.pop();
-    // const {value: context} = forth.objects.get(context_id);
-        const context_id = forth.constants.get('canvas', 'current_context');
-        if (!context_id) {
-        }
-       const context = forth.objects.get(context_id.value).value;
-
-    context.fillStyle = color;
+      const context = forth.pop_object();
+      const color = forth.pop_string();
+      context.fillStyle = color;
     }
 }
 
 function font_word({forth}) {
     return () => {
-        const font_string_id = forth.parameter_stack.pop();
-        const font_string = forth.strings.get(font_string_id.value);
-        // const context_id = forth.parameter_stack.pop();
-        // const context = forth.objects.get(context_id.value);
-        const context_id = forth.constants.get('canvas', 'current_context');
-        if (!context_id) {
-        }
-        const    context = forth.objects.get(context_id.value).value;
-
+        const context = forth.pop_object();
+        const font_string = forth.pop_string();
         context.font = font_string;
     }
 }
-
+/*
 function set_font_word({forth}) {
     return () => {
         const font_string_id = forth.parameter_stack.pop();
@@ -83,16 +62,17 @@ function set_font_word({forth}) {
         // const context_id = forth.parameter_stack.pop();
         // const context = forth.objects.get(context_id.value);
 
+        // should be variable ... or just let the user set a variable.
         forth.constants.create('canvas', 'current_font', font_string_id);
     }
-}
-
+}*/
+/*
 function set_context_word({forth}) {
     return () => {
         const context_id = forth.parameter_stack.pop();
         forth.constants.create('canvas', 'current_context', context_id);
     }
-}
+}*/
 
 /**
  * (<canvas_context> <x pos> <y pos> <width> <height> -- )
@@ -104,43 +84,29 @@ function set_context_word({forth}) {
  **/
 function fill_rect_word ({forth}) {
     return () => {
-        const height = forth.parameter_stack.pop();
-        const width = forth.parameter_stack.pop();
-        const y = forth.parameter_stack.pop();
-        const x = forth.parameter_stack.pop();
-        // const context_id = forth.parameter_stack.pop();
+        const context = forth.pop_object();
+        const height = forth.pop_number();
+        const width = forth.pop_number();
+        const y = forth.pop_number();
+        const x = forth.pop_number();
 
-        // const {value: context} = forth.objects.get(context_id.value);
-        const context_id = forth.constants.get('canvas', 'current_context');
-        if (!context_id) {
-        }
-        const    context = forth.objects.get(context_id.value).value;
-        context.fillRect(x.value, y.value, width.value, height.value);
+        context.fillRect(x, y, width, height);
     }
 }
 
 function fill_text_word ({forth}) {
     return () => {
-        const y = forth.parameter_stack.pop();
-        const x = forth.parameter_stack.pop();
-        const text_id = forth.parameter_stack.pop();
-        const text = forth.strings.get(text_id.value);
-        // const context_id = forth.parameter_stack.pop();
-        // const {value: context} = forth.objects.get(context_id.value);
-
-        // It is weird, but the canvas does not remember the font when set
-        // separately, using canvas::font. So we use this technique to
-        // set a constant with the font, and set it immediately before
-        // drawing the text.
-        const context_id = forth.constants.get('canvas', 'current_context');
-        if (!context_id) {
-        }
-        const    context = forth.objects.get(context_id.value).value;
+        const context = forth.pop_object();
+        const y = forth.pop_number();
+        const x = forth.pop_number();
+        const text = forth.pop_string();
+/*
         const font = forth.constants.get('canvas', 'current_font');
+
         if (font) {
               context.font = forth.strings.get(font.value);
-        }
-        context.fillText(text, x.value, y.value);
+        }*/
+        context.fillText(text, x, y);
     }
 }
 
@@ -152,11 +118,11 @@ const CanvasVocabulary = (forth, options = {}) => {
     // }
     run_count += 1;
     forth.add_word('canvas', "context", context_word);
-    forth.add_word('canvas', "set-context", set_context_word);
+    // forth.add_word('canvas', "set-context", set_context_word);
     forth.add_word('canvas', "fill_style", fill_style_word);
     forth.add_word('canvas', "fill_rect", fill_rect_word);
     forth.add_word('canvas', "font", font_word);
-    forth.add_word('canvas', "set_font", set_font_word);
+    // forth.add_word('canvas', "set_font", set_font_word);
     forth.add_word('canvas', "fill_text", fill_text_word);
 }
 

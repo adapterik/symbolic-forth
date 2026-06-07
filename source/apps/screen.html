@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Screen | Applications | Symbolic FORTH</title>
+<link rel="stylesheet" href="screen.css">
+</head>
+<body>
+
+<div id="header">
+  <div id="title">
+    Screen
+  </div>
+  <div id="menu">
+     <a href="/applications.html">&lt;&lt; Back to Applications</a>
+  </div>
+  <div id="alert"></div>
+</div>
+
+<div class="screen">
+  <div class="screen-area">
+    <div class="screen-display" id="screen">
+<!--     <canvas class="canvas" id="canvas"></canvas> -->
+  </div>
+  </div>
+  <div class="feedback">
+    <div class="output-area" id="output"></div>
+    <div class="console" id="console"></div>
+  </div>
+  <div id="input">
+    <form id="code_input_form">
+      <div id="code_input_history_pos">1</div>
+      <input name="code_input" id="code_input_field" focus autocomplete="off">
+      <button type="button" id="code_input_button">Run</button>
+    </form>
+  </div>
+</div>
+
+
+<script src="screen.js" type="module"></script>
+
+</body>
+
+</html>

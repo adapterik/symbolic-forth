@@ -57,9 +57,9 @@ export default class ForthInterpreter {
             // In 'debug' mode, though, we leave everything alone so the programmer
             // can inspect the state of the system.
             // const dot_element = document.getElementById('info');
-            this.forth.ui.console(message);
-            this.forth.ui.console('Re-initializing system to the starting state.');
-            this.forth.ui.console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
+            this.forth.ui.print_console(message);
+            this.forth.ui.print_console('Re-initializing system to the starting state.');
+            this.forth.ui.print_console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
             // dot_element.innerHTML += `<div class="error">Error: ${message}</div>`;
             // this.initialize();
             this.state = 'error';
@@ -130,7 +130,13 @@ export default class ForthInterpreter {
     }
 
     run(code_text) {
-        this.interpret(code_text);
+        try {
+            this.interpret(code_text);
+        } catch (ex) {
+            // console.log('Error running interpreter', ex.message, code_text);
+            throw ex;
+        }
+
     }
 
     next_input_token() {
@@ -248,6 +254,7 @@ export default class ForthInterpreter {
     find_recognizer(token) {
         for (const {name, recognizer} of this.recognizers) {
             const item = recognizer(this.forth, token);
+
             if (item) {
                 return item;
             }
@@ -303,6 +310,27 @@ export default class ForthInterpreter {
 
         }
         return [token, compiled_words];
+    }
+
+    collect_tokens_until(until_tokens) {
+        let tokens = [];
+        let token;
+
+        for (;;) {
+            token = this.next_input_token();
+            // console.log('compile_until: token:', token);
+            if (token === null) {
+                return;
+            }
+
+            // for (token = this.next_input_token(); token != null; token = this.next_input_token()) {
+            if (until_tokens.includes(token.toUpperCase())) {
+                break;
+            }
+
+            tokens.push(token);
+        }
+        return tokens
     }
 
     // collect_values_until(until_tokens, context) {

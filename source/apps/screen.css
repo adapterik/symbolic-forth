@@ -1,0 +1,56 @@
+@import "/common.css";
+
+.screen {
+   flex: 1 1 0;
+   display: flex;
+   flex-direction: column;
+   font-family: monospace;
+}
+/*
+.shapes > .display {
+    flex: 0 0 auto;
+}
+
+.shapes .display > canvas {
+  border: 1px solid red;
+  width: 600px;
+  height: 480px;
+}*/
+
+.screen-area .screen-display {
+  position: relative;
+  width: 640px;
+  height: 480px;
+  border: 1px solid gray;
+  font-size: 12px;
+}
+
+#input {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#code_input_form {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: row;
+}
+
+#code_input_history_pos {
+  flex: 0 0 4em;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#code_input_field {
+  flex: 1 1 0;
+  font-family: monospace;
+  font-size: 110%;
+}
+
+#code_input_button {
+  flex: 0 0 auto;
+}

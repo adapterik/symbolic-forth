@@ -93,8 +93,9 @@ flex: 0 0 auto;
 
 .feedback > .output-area {
     flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
+/*     display: flex; */
+/*     flex-direction: column; */
+    overflow-y: auto;
 }
 
 .feedback > * > .title-area {
@@ -135,6 +136,7 @@ flex: 0 0 auto;
     flex: 1 1 0;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 
 .feedback > .console-area> .console {

@@ -9,6 +9,10 @@ class TextUI {
     constructor() {
     }
 
+    println(s) {
+        print(s);
+    }
+
 
     output_html(el) {
         this.println(message);
@@ -25,6 +29,7 @@ class TextUI {
 
     output_text(message) {
         std.printf('%s', message);
+        std.out.flush();
     }
 
     output_printf(format, params) {
@@ -34,7 +39,7 @@ class TextUI {
         this.println('NO CLEAR OUTPUT FOR NOW');
     }
 
-    console(message) {
+    print_console(message) {
         this.println(message);
     }
 
@@ -58,9 +63,9 @@ export class Forth extends ForthBase {
     }
 
     error(message) {
-        this.console(message);
-        this.console('Re-initializing system to the starting state.');
-        this.console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
+        this.print_console(message);
+        this.print_console('Re-initializing system to the starting state.');
+        this.print_console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
         this.initialize();
     }
 }

@@ -1,0 +1,65 @@
+( Constants )
+
+32 CONST char::space
+34 CONST char::double-quote
+44 CONST char::comma
+10 CONST char::eol
+0 CONST char::eof
+
+: read-field ( input-file/fd -- field/string )
+  L:> file-handle
+
+  { A[ CHAR::SPACE ] L@ file-handle } FILE::GET-UNTIL-CODE
+
+  DUP CHAR::EOF = IF
+    ( end of file )
+    ( this is an error unless it is just the beginning and we don't have a
+      number yet )
+    DROP ( the matching char code )
+    ~EOF
+    RETURN
+  THEN
+  DROP
+
+  \ note that file::read will throw if it cannot get the requested bytes
+  TO-INT L@ file-handle FILE::READ
+
+  \ next character must be a space, or we have a problem.
+  L@ file-handle FILE::GET-CHAR
+
+  COND
+    CHAR::EOF =       OF " Unexpected EOF" PRINTLN EXIT END
+    CHAR::SPACE = NOT OF " Unexpected non-space: " PRINT PRINTLN EXIT END
+  END
+
+;
+
+: main
+  L:> input-file
+
+  FILE::RDONLY L@ input-file FILE::OPEN L:> file-handle
+
+  0 L:> field-count
+
+  BEGIN
+    L@ file-handle read-field
+
+    DUP ~EOF eq IF DROP BREAK THEN
+
+    DROP
+
+\      PRINTLN
+
+\      DUP ~EOF EQ IF BREAK THEN
+
+    L+! field-count
+  REPEAT
+
+  L@ file-handle file::close
+
+  " Done; got " PRINT L@ field-count PRINT "  fields" PRINTLN
+
+;
+
+
+main

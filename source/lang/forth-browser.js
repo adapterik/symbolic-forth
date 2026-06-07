@@ -78,9 +78,18 @@ export default class WebUI {
 
     /** public interface **/
 
+    text_el(message) {
+        const message_el = document.createElement('div');
+        message_el.style.display = 'inline-block';
+        message_el.style.border = '1px solid silver';
+        message_el.style.padding = '0.25rem';
+        message_el.style.margin = '0.25rem';
+        message_el.innerText = message;
+        return message_el;
+    }
 
     output_text(message) {
-        this.output_html(this.message_el(message));
+        this.output_html(this.text_el(message));
     }
 
     output_cr() {
@@ -100,7 +109,7 @@ export default class WebUI {
         this.output_element.innerText = '';
     }
 
-    console(message) {
+    print_console(message) {
         this.console_element.appendChild(document.createTextNode(message +   '\n'));
     }
 

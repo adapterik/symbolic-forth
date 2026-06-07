@@ -444,6 +444,20 @@ function local_word({interpreter, forth}) {
     }
 }
 
+function local_spread_word({interpreter, forth}) {
+    const tokens = interpreter.collect_tokens_until(']');
+
+    return () => {
+        const array = forth.pop_array();
+
+        let index = 0;
+        for (const token of tokens) {
+          forth.currentContext().locals[token] = array[index];
+          index += 1;
+        }
+    }
+}
+
 function local_store_word({interpreter, forth}) {
     const local_ref =   interpreter.next_input_token();
     if (!local_ref) {
@@ -458,16 +472,31 @@ function local_store_word({interpreter, forth}) {
     }
 }
 
+function local_incr_word({interpreter, forth}) {
+    const local_ref =   interpreter.next_input_token();
+    if (!local_ref) {
+        throw new Error(`Sorry, no local name provided`);
+    }
+    return () => {
+        const local = forth.currentContext().locals[local_ref];
+        if (local.type !== 'number') {
+            throw new Error(`cannot increment a local of type '${local.type}'`);
+        }
+        local.value += 1;
+    }
+}
+
 function local_fetch_word({interpreter, forth}) {
     const local_ref =   interpreter.next_input_token();
     if (!local_ref) {
         throw new Error(`no local name provided`);
     }
     return ({}) => {
-        if (!(local_ref in forth.currentContext().locals)) {
+        const local = forth.currentContext().getLocal(local_ref);
+        if (typeof local === 'undefined') {
             throw new Error(`local '${local_ref}' does not exist in this context`);
         }
-        forth.parameter_stack.push(forth.currentContext().locals[local_ref]);
+        forth.parameter_stack.push(local);
     }
 }
 
@@ -663,7 +692,7 @@ function cond_word({interpreter, forth}) {
         // If we didn't actually run matching branch, we still need to
         // drop the original value to test against.
         if (!success) {
-            forth.parameter_stack.drop();
+            forth.parameter_stack.pop();
         }
     }
 }
@@ -745,12 +774,10 @@ function do_word({interpreter, forth}) {
     const [,program] = interpreter.compile_until( ['LOOP']);
 
     return () => {
-        const context = forth.currentContext();
+        const start = forth.pop_number();
+        const end = forth.pop_number();
 
-        const start = forth.parameter_stack.pop();
-        const end = forth.parameter_stack.pop();
-
-        for (let i = start.value; i < end.value; i += 1) {
+        for (let i = start; i < end; i += 1) {
             interpreter.run_word_list(program);
             switch(forth.controlFlowState) {
                 case 'break':
@@ -764,6 +791,73 @@ function do_word({interpreter, forth}) {
                     return;
             }
         }
+    }
+}
+
+function doi_wordx({interpreter, forth}) {
+    const [,program] = interpreter.compile_until( ['LOOP']);
+
+    return () => {
+        const start = forth.pop_number();
+        const end = forth.pop_number();
+
+        // const context = forth.enterContext();
+        // context.setLocal('I', forth.number_value(start));
+
+        for (let i = start; i < end; i += 1) {
+            forth.parameter_stack.push(forth.number_value(i));
+            interpreter.run_word_list(program);
+            switch(forth.controlFlowState) {
+                case 'break':
+                    forth.resetControlFlowState();
+                    // forth.leaveContext();
+                    return;
+                case 'continue':
+                    forth.resetControlFlowState();
+                    break;
+                case 'return':
+                case 'exit':
+                    // forth.leaveContext();
+                    return;
+            }
+        }
+    }
+}
+
+function doi_word({interpreter, forth}) {
+    const [,program] = interpreter.compile_until( ['LOOP']);
+
+    return () => {
+        const start = forth.pop_number();
+        const end = forth.pop_number();
+
+        const context = forth.enterContext(true);
+        // context.setLocal('I', forth.number_value(start));
+
+        for (let i = start; i < end; i += 1) {
+            context.setLocal('I', forth.number_value(i));
+            // forth.parameter_stack.push(forth.number_value(i));
+            interpreter.run_word_list(program);
+            switch(forth.controlFlowState) {
+                case 'break':
+                    // forth.resetControlFlowState();
+                    forth.leaveContext();
+                    forth.currentContext().setControlFlowBreak();
+                    return;
+                case 'continue':
+                    forth.resetControlFlowState();
+                    break;
+                case 'return':
+                    forth.leaveContext();
+                    forth.currentCOntext().setControlFlowReturn();
+                    return;
+                case 'exit':
+                    forth.leaveContext();
+                    forth.currentCOntext().setControlFlowExit();
+                    return;
+            }
+        }
+        forth.leaveContext();
     }
 }
 
@@ -796,6 +890,30 @@ function begin_word({forth, interpreter}) {
 
     }
 }
+function every_word({forth, interpreter}) {
+    const [stop_token, program] = interpreter.compile_until(['END']);
+    let intervalId;
+    return () => {
+        const interval = forth.pop_number();
+        intervalId = window.setInterval(() => {
+            const context = forth.currentContext();
+            interpreter.run_word_list(program, true);
+            switch(forth.controlFlowState) {
+                case 'break':
+                    forth.resetControlFlowState();
+                    window.clearTimeout(intervalId);
+                    return;
+                case 'continue':
+                    forth.resetControlFlowState();
+                    break;
+                case 'return':
+                case 'exit':
+                    window.clearTimeout(intervalId);
+                    return;
+            }
+        }, interval);
+    }
+}
 function colon_word({forth, interpreter}) {
     return () => {
         const word_name = interpreter.next_input_token();
@@ -819,7 +937,7 @@ function colon_word({forth, interpreter}) {
                     case 'exit': break;
                 }
 
-                forth.exitContext();
+                forth.leaveContext();
             }
         };
 
@@ -912,6 +1030,25 @@ function not_equal_word({forth}) {
         numeric_comparison(forth, 'Unequal', (v1, v2) => {return v1 !== v2;});
     }
 }
+
+// binary math
+
+function binary_and_word({forth}) {
+    return () => {
+        const num1 = forth.pop_number();
+        const num2 = forth.pop_number();
+        forth.parameter_stack.push( forth.number_value(num1 & num2));
+    }
+}
+
+function binary_or_word({forth}) {
+    return () => {
+        const num1 = forth.pop_number();
+        const num2 = forth.pop_number();
+        forth.parameter_stack.push( forth.number_value(num1 | num2));
+    }
+}
+
 // Parameter Stack
 
 function dup_word({forth}) {
@@ -1005,6 +1142,19 @@ function noop_token_word () {
     return null;
 }
 
+
+function to_string_word({forth}) {
+    return () => {
+        const item = forth.parameter_stack.pop();
+        forth.parameter_stack.push(forth.string_value(forth.to_string(item)));
+    };
+}
+function to_int_word({forth}) {
+    return () => {
+        const item = forth.parameter_stack.pop();
+        forth.parameter_stack.push(forth.number_value(forth.to_int(item)));
+    };
+}
 /**
  * A macro is pure compile-time which produces code which is in turn injected
  * into the interpreter for compilation...
@@ -1067,6 +1217,11 @@ const CoreVocabulary = (forth, options = {}) => {
     forth.add_word('', '≤', less_than_or_equal_word);
     forth.add_word('', '<=', less_than_or_equal_word);
 
+    forth.add_word('', '&', binary_and_word);
+    forth.add_word('', '|', binary_or_word);
+    // forth.add_word('', '~', binary_or_word);
+    // forth.add_word('', '^', binary_or_word);
+
     // generic
     forth.add_word('', 'EQ', eq_word);
 
@@ -1099,10 +1254,15 @@ const CoreVocabulary = (forth, options = {}) => {
 
     // Locals
     forth.add_word('', 'LOCAL', local_word);
+    forth.add_word('', 'L:>', local_word);
+    forth.add_word('', 'L:>[', local_spread_word);
     forth.add_word('', 'LOCAL@', local_fetch_word);
     forth.add_word('', 'L@', local_fetch_word);
+    forth.add_word('', 'L<-', local_fetch_word);
     forth.add_word('', 'LOCAL!', local_store_word);
     forth.add_word('', 'L!', local_store_word);
+    forth.add_word('', 'L->', local_store_word);
+    forth.add_word('', 'L+!', local_incr_word);
 
     // conditional
     forth.add_word('', 'IF', if_word);
@@ -1115,6 +1275,7 @@ const CoreVocabulary = (forth, options = {}) => {
 
     // Loops and such.
     forth.add_word('', 'DO', do_word);
+    forth.add_word('', 'DOI', doi_word);
 
     forth.add_word('', 'EXIT', exit_word);
     forth.add_word('', 'BREAK', break_word);
@@ -1124,6 +1285,7 @@ const CoreVocabulary = (forth, options = {}) => {
 
     // Hmm, a better loop, because it is dead simple and is has less magic?
     forth.add_word('', 'BEGIN', begin_word);
+    forth.add_word('', 'EVERY', every_word);
     // forth.add_word('', '', begin_word);
 
     // TYPES
@@ -1154,6 +1316,9 @@ const CoreVocabulary = (forth, options = {}) => {
     forth.add_word('', 'RESET', reset_word);
 
     forth.add_word('', 'MACRO', macro_word);
+
+    forth.add_word('', 'TO-STRING', to_string_word);
+    forth.add_word('', 'TO-INT', to_int_word);
 
 }
 

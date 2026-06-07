@@ -90,6 +90,7 @@ function main() {
     try {
         run();
     } catch (ex) {
+        console.log(ex);
         console.error('Error in main:', ex.message, ex.stack);
     }
 }

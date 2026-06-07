@@ -66,3 +66,19 @@ It would be nice to have a C backend at some point... But we currently rely upon
 Sometimes FORTH program streams are read left to right, and sometimes right to left. That is one of the confusing aspects of it. I wonder if there is some way to make this more uniform?
 
 The canonical exmaple is math operations. Even though we write `4 2 /` which means `4/2`, in the implemntation of `/` in which we take the 2 first, and the 4 second, we know that the 4 is actually first and the 2 second. Okay, this is fine so far, I guess, because the conflict is restricted to implementation. But I think the idea is more pernicious, since the language details are so close to the user - that is the language designer and user are closer than in most programming languages. So the question inevevitably arises, especially for unfamiliar words - are the stack arguments used in FORTH order as they appear on the stack, or in syntactical order as they appear typed or written.
+
+
+# Compiling vs Runtime
+
+Stuff to the left of a word form possible arguments to it at runtime, stuff to the right possible arguments, or information, at compile time.
+
+A couple of considerations. If it were important, say pre-compiling code run many times, more compile time work means faster run time.
+
+To make this more palatable, we need to really incorporate this as a very legitimate and normal way of operating. In SF, it is easy, at least in core words writtin in JS, to do compile time stuff.
+
+Another consideration is whether we need compile-time or run-time context. So far our SF does compiling right before execution in a typical context, say the main body of the program.
+
+E.g. an array is defined via compilation, but then the compiled word list is executed right afterwards, so it gets the context.
+
+But array elements could be pre-defined as an anoymous word list - though the word list, like a word definition, would be achieved via compilation anyway, so does it really make a difference?
+

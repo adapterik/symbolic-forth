@@ -25,6 +25,7 @@ function file_load_word({forth}) {
     }
 }
 
+
 /**
  * Opens the give file, puts the file handle on the stack
  * If the file does not exist or there is any problem opening it
@@ -32,15 +33,17 @@ function file_load_word({forth}) {
  **/
 function file_open_word({forth}) {
     return () => {
-        const {type, value} = forth.parameter_stack.pop();
-        const filename = forth.strings.get(value);
-        const fd = os.open(filename, os.O_RDONLY);
+        const filename = forth.pop_string();
+        const flags = forth.pop_number();
+        const fd = os.open(filename, flags);
         if (fd === null) {
-            forth.parameter_stack.push(forth.null_value());
-            return;
+            throw new Error(`cannot open file ${filename} with perms ${stringPerms}`);
+            // forth.parameter_stack.push(forth.null_value());
+            // return;
         }
         openFiles[`${fd}`] = {
             fd,
+
             pos: 0
         };
         forth.parameter_stack.push(forth.number_value(fd));
@@ -66,6 +69,31 @@ function file_close_word({forth}) {
         const fileKey = '' + value;
         if (fileKey in openFiles) {
             delete openFiles[fileKey];
+            function file_read_word({forth}) {
+                return () => {
+                    const {type, value: fd} = forth.parameter_stack.pop();
+
+                    const len = forth.pop_number();
+
+                    const buffer = new ArrayBuffer(len);
+                    const textInput = new Uint8Array(buffer);
+
+                    const read_count = os.read(fd, buffer, 0, len);
+
+                    if (read_count < len) {
+                        throw new Error('unexpcted end of file');
+                    }
+
+                    let result = '';
+                    for (let i = 0; i < read_count; i += 1) {
+                        // console.log('char', i, textInput[i], String.fromCharCode(textInput[i]));
+                        result += String.fromCharCode(textInput[i]);
+                    }
+
+                    forth.parameter_stack.push(forth.string_value(result));
+                }
+            }
+
         }
     }
 }
@@ -182,6 +210,50 @@ function file_get_until_word({forth}) {
         forth.parameter_stack.push(forth.string_value(result));
     }
 }
+
+function file_read_word({forth}) {
+    return () => {
+        const {type, value: fd} = forth.parameter_stack.pop();
+
+        const len = forth.pop_number();
+
+        const buffer = new ArrayBuffer(len);
+        const textInput = new Uint8Array(buffer);
+
+        const read_count = os.read(fd, buffer, 0, len);
+
+        if (read_count < len) {
+           throw new Error('unexpcted end of file');
+        }
+
+        let result = '';
+        for (let i = 0; i < read_count; i += 1) {
+            // console.log('char', i, textInput[i], String.fromCharCode(textInput[i]));
+            result += String.fromCharCode(textInput[i]);
+        }
+
+        forth.parameter_stack.push(forth.string_value(result));
+    }
+}
+
+function file_write_string_word({forth}) {
+    return () => {
+        const fd = forth.pop_number();
+        const toPrint = forth.pop_string();
+
+        const len = toPrint.length;
+
+        const buffer = new ArrayBuffer(len);
+        const textInput = new Uint8Array(buffer);
+
+        for (let i = 0; i < len; i += 1) {
+            textInput[i] = toPrint.charCodeAt(i);
+        }
+
+        os.write(fd, buffer, 0, len);
+    }
+}
+
 function file_get_while_word({forth}) {
     return () => {
         const {type, value: fd} = forth.parameter_stack.pop();
@@ -255,6 +327,7 @@ function file_get_until_code_word({forth}) {
 
         // and we return the matching character, or 0 if end of file.
         forth.parameter_stack.push(forth.number_value(char === null ? 0 : char));
+
     }
 }
 
@@ -322,17 +395,27 @@ function file_size_word({forth}) {
     }
 }
 
-
 const FileVocabulary = (forth, options = {}) => {
+    forth.add_constant('file', 'RDONLY', forth.number_value(os.O_RDONLY));
+    forth.add_constant('file', 'WRONLY', forth.number_value(os.O_WRONLY));
+    forth.add_constant('file', 'RDWR', forth.number_value(os.O_RDWR));
+    forth.add_constant('file', 'APPEND', forth.number_value(os.O_APPEND));
+    forth.add_constant('file', 'CREAT', forth.number_value(os.O_CREAT));
+    forth.add_constant('file', 'EXCL', forth.number_value(os.O_EXCL));
+    forth.add_constant('file', 'TRUNC', forth.number_value(os.O_TRUNC));
+
     forth.add_word('file', "load", file_load_word);
     forth.add_word('file', "open", file_open_word);
     forth.add_word('file', "close", file_close_word);
+    forth.add_word('file', "read", file_read_word);
     forth.add_word('file', "get-word", file_get_word_word);
     forth.add_word('file', "get-until", file_get_until_word);
     forth.add_word('file', "get-while-code", file_get_while_word);
     forth.add_word('file', "get-until-code", file_get_until_code_word);
     forth.add_word('file', "get-char", file_get_char_word);
     forth.add_word('file', "get-line", file_get_line_word);
+    forth.add_word('file', 'write-string', file_write_string_word);
+
     // forth.add_word('file', "size", file_size_word);
 
 };

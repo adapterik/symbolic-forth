@@ -1,0 +1,218 @@
+(
+    Given a row and col number, puts the cell DOM id string on the stack
+)
+: app::cell-id
+    L:> col L:> row
+
+    ( cute ... join-array takes care of converting non-strings to strings :] )
+\      A[ " #cell_" L@ row " _" L@ col ] STRING::JOIN-ARRAY
+
+    ( but this is more direct, as we don't need to create an
+      intermediary array )
+    # " #cell_" L@ row TO-STRING " _" L@ col TO-STRING STRING::JOIN
+;
+
+( given a row and col within a window, finds the cell element
+  and puts it on the stack )
+: app::cell ( row/number col/number window/array -- cell/object )
+    L:>[ upper-row upper-col lower-row lower-col ]
+    L:> col
+    L:> row
+    { L@ upper-row L@ row + }
+    { L@ upper-col L@ col + } app::cell-id DOM::SELECT
+;
+
+
+\  : app::print
+\      L:> col
+\      L:> row LOCAL text
+\      L@ text STRING::LENGTH L:> len
+\
+\      0 L:> pos
+\      BEGIN
+\          L@ len L@ pos = IF BREAK THEN
+\
+\          L@ pos L@ text STRING::CHAR-AT                    \ get char at pos
+\          L@ row { L@ col L@ pos + } app::cell-id DOM::SELECT  \ get cell element
+\          DOM::TEXT
+\
+\          L@ pos 1 + L-> pos
+\      REPEAT
+\  ;
+
+: app::window-dimensions ( window/array -- height/number width/number )
+    L:>[ upper-row upper-col lower-row lower-col ]
+    L@ lower-row L@ upper-row -
+    L@ lower-col L@ upper-col -
+;
+
+: app::background-color
+    L:> window L:> color
+
+    L@ window app::window-dimensions L:> width L:> height
+
+    0 L:> row
+    BEGIN
+        L@ row L@ height > IF BREAK THEN
+
+        0 L:> col
+        BEGIN
+            L@ col L@ width > IF BREAK THEN
+
+            " background-color" L@ color
+              L@ row L@ col L@ window app::cell
+              DOM::STYLE
+
+            L+! col
+        REPEAT
+
+        L+! row
+    REPEAT
+;
+
+: app::cell-background-color ( color/string row/number col/number window/array -- )
+    L:> cell L:> color
+
+     " background-color" L@ color L@ cell DOM::STYLE
+;
+
+: app::text-color ( color/string window/array)
+    L:> window L:> color
+
+    L@ window app::window-dimensions L:> width L:> height
+
+    0 L:> row
+    BEGIN
+        L@ row L@ height > IF BREAK THEN
+
+        0 L:> col
+        BEGIN
+            L@ col L@ width > IF BREAK THEN
+
+            " color" L@ color
+              L@ row L@ col L@ window app::cell
+              DOM::STYLE
+
+            L+! col
+        REPEAT
+
+        L+! row
+    REPEAT
+;
+
+: app::cell-text-color ( color/string row/number col/number window/array )
+
+;
+
+( Displays text at a starting row and col in a given window )
+
+: app::print ( text/string row/number col/number window/array -- )
+    L:> window L:> col L:> row L:> text
+
+    L@ text STRING::LENGTH L:> len
+
+    0 L:> pos
+    BEGIN
+        L@ len L@ pos = IF BREAK THEN
+
+        L@ pos L@ text STRING::CHAR-AT
+        L@ row { L@ col L@ pos + } L@ window app::cell
+        DOM::TEXT
+
+        L+! pos
+    REPEAT
+;
+
+ ( define some windows
+  a window is just a rectangular sub-area of the display area
+  windows do not overlap )
+A[ 0 0 20 30 ] CONST text-window
+
+( display is 30 rows by 80 cols at this moment. )
+( this should be 20 x 10 )
+A[ 20 60 29 79 ] CONST status-window
+
+A[ 0 72 0 79 ] CONST clock-window
+
+: app::display-clock ( row/number col/number window/array -- )
+   ~green clock-window app::background-color
+   ~white clock-window app::text-color
+;
+
+: app::display-clock-time
+   time::now time::date-parts L:> second L:> minute L:> hour
+
+   # 2 " 0" L@ hour TO-STRING STRING::LPAD
+     2 " 0" L@ minute TO-STRING STRING::LPAD
+     2 " 0" L@ second TO-STRING STRING::LPAD
+   " :" STRING::INTERPOLATE
+
+   0 0 clock-window app::print
+;
+
+: app::start-clock
+    app::display-clock
+    app::display-clock-time
+    300 EVERY
+        app::display-clock-time
+    END
+\      300 << app::display-clock-time> DOM::EVERY
+;
+
+\  : app::start-clock
+\      ~app::display-clock 500 dom::interval-timer
+\  ;
+
+: main
+    ( word to get screen element )
+    ~#screen DOM::SELECT L:> screen
+
+    ( set the background color of the whole area )
+    ~aqua ~background-color L@ screen DOM::STYLE
+
+    ( set background colors of our windows )
+    ~silver text-window app::background-color
+    ~yellow status-window app::background-color
+
+    ( 5 5 app::cell PRINTLN )
+
+    ( word to set the background color of a cell element )
+    ~green  {  5  5 text-window app::cell } app::cell-background-color
+    ~red    { 15 15 text-window app::cell } app::cell-background-color
+    ~blue   { 29 0 text-window app::cell }  app::cell-background-color
+
+    " hello, this is the SCREEN app"   0 0 text-window app::print
+    " it is our next ui target"        1 0 text-window app::print
+    " with the right primitives and "  2 0 text-window app::print
+    " abstractions we should be able " 3 0 text-window app::print
+    " do some interesting things."     4 0 text-window app::print
+
+    ( new design - DO just puts the index counter on the stack )
+    ( todo: perhaps a DOI which does, and a DO which doesn't? )
+    10 0 DO
+        " 01234567890123456789" SWAP 0 status-window app::print
+    LOOP
+
+    app::start-clock
+
+    ( " Hello, this is the text window. The text should
+    flow across and down this window. Good luck Erik!" 0 0 L@text-window app::text )
+
+
+    ( " green"  " background-color"  5  5 app::cell DOM::SELECT DOM::STYLE
+    " red"    " background-color" 15 15 app::cell DOM::SELECT DOM::STYLE )
+    (
+    " white"  " background-color" 25 25 app::cell DOM::SELECT DOM::STYLE
+    " orange" " background-color" 35 35 app::cell DOM::SELECT DOM::STYLE
+    )
+
+    (
+    " hello, this is the SCREEN app" 10 1 app::print
+    " it is our next ui target" 11 1 app::print
+    " with the right primitives and " 12 1 app::print
+    " abstractions we should be able " 13 1 app::print
+    " do some interesting things." 14 1 app::print
+    )
+;
+
+main

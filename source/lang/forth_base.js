@@ -141,13 +141,35 @@ export default class ForthBase {
         }
     }
 
+    object_value(value) {
+        return {
+            type: 'object',
+            value: this.objects.create(value)
+        };
+    }
+
     pop_number() {
-        const {type, value} = this.parameter_stack.pop();
+        const x = this.parameter_stack.pop();
+        const {type, value} = x; // this.parameter_stack.pop();
         if (type !== 'number') {
             throw new Error(`pop_number expects a number on the stack, got a '${type}'`);
         }
         return value;
     }
+    peek_number() {
+        const {type, value} = this.parameter_stack.peek();
+        if (type !== 'number') {
+            throw new Error(`peek_number expects a number on the stack, got a '${type}'`);
+        }
+        return value;
+    }
+    // incr_number() {
+    //     const {type, value} = this.parameter_stack.peek();
+    //     if (type !== 'number') {
+    //         throw new Error(`incr_number expects a number on the stack, got a '${type}'`);
+    //     }
+    //     return value;
+    // }
     pop_bool() {
         const {type, value} = this.parameter_stack.pop();
         if (type !== 'bool') {
@@ -160,8 +182,7 @@ export default class ForthBase {
         if (type !== 'symbol') {
             throw new Error(`pop_symbol expects a symbol on the stack, got a '${type}'`);
         }
-        const symbol = this.symbols.get(value);
-        return symbol;
+        return this.symbols.get(value);
     }
 
     pop_string() {
@@ -169,17 +190,31 @@ export default class ForthBase {
         if (type !== 'string') {
             throw new Error(`pop_string expects a string on the stack, got a '${type}'`);
         }
-        const the_string = this.strings.get(value);
-        return the_string;
+        return this.strings.get(value);
     }
 
+    pop_string_or_symbol_name() {
+        const {type, value} = this.parameter_stack.pop();
+        switch (type) {
+            case 'string': return this.strings.get(value);
+            case 'symbol': return this.symbols.get(value).name;
+            default: throw new Error(`pop_string_or_symbol_name expects a string or symbol on the stack, got a '${type}'`);
+        }
+    }
 
     pop_array() {
         const {type, value} = this.parameter_stack.pop();
         if (type !== 'array') {
-            throw new Error(`pop_array expects an array on the stack, got a '${type}'`);
+            throw new Error(`pop_array expects an array value on the stack, got a '${type}'`);
         }
         return value;
+    }
+    pop_object() {
+        const {type, value} = this.parameter_stack.pop();
+        if (type !== 'object') {
+            throw new Error(`pop_object expects an object value on the stack, got a '${type}'`);
+        }
+        return this.objects.get(value);
     }
     pop_map() {
         const {type, value} = this.parameter_stack.pop();
@@ -215,6 +250,44 @@ export default class ForthBase {
         }
     }
 
+    to_string({type, value}) {
+        switch (type) {
+            case 'string': return this.strings.get(value);
+            case 'symbol': return this.symbols.get(value).name;
+            case 'number': return value.toFixed();;
+            case 'array': {
+                return value.map((item) => {
+                    return this.to_string(item);
+                }).join(' ');
+            }
+            case 'map':
+                const {map} = value;
+                return Object.entries(value).map(([key, value]) => {
+                    return `${key}=>${this.to_string(value)}`;
+                }).join(' ');
+            case 'object':
+                return `[ Object # ${value} ]`;
+            case 'null': return '';
+            case 'bool': return value ? 'true' : 'false';
+            case 'variable': return this.to_string(forth.variables.get(value));
+            default: return `[unknown type ${type}]`;
+        }
+    }
+
+
+    to_int({type, value}) {
+        switch (type) {
+            case 'string': return parseInt(this.strings.get(value), 10);
+            case 'symbol': return parseInt(this.symbols.get(value).name, 10);
+            case 'number': return '' + value;
+
+            case 'null': return 0;
+            case 'bool': return value ? 1 : 0;
+            case 'variable': return this.to_int(forth.variables.get(value));
+            default: return `[unknown type ${type}]`;
+        }
+    }
+
     add_word(vocabulary, names, func) {
         if (names instanceof Array) {
             for (const name of names) {
@@ -237,9 +310,9 @@ export default class ForthBase {
     }
 
     error(message) {
-        this.ui.console(message);
-        this.ui.console('Re-initializing system to the starting state.');
-        this.ui.console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
+        this.ui.print_console(message);
+        this.ui.print_console('Re-initializing system to the starting state.');
+        this.ui.print_console(`If you wish to inspect the system post-error, set the global state variable "MODE" to the symbol 'debug`);
         this.initialize();
     }
 
@@ -253,7 +326,7 @@ export default class ForthBase {
         }
         this.interpreter.interpret();
         if (this.interpreter.state === 'error') {
-            this.console('Interpreter error, resetting system');
+            this.ui.print_console('Interpreter error, resetting system');
             this.initialize();
         }
     }
@@ -263,13 +336,13 @@ export default class ForthBase {
         this.contextStack.push(context);
     }
 
-    enterContext() {
-        const context = new ForthContext();
+    enterContext(lexical = false) {
+        const context = new ForthContext({lexical, parent: this.currentContext()});
         this.contextStack.push(context);
         return context;
     }
 
-    exitContext() {
+    leaveContext() {
         const oldContext = this.contextStack.pop();
         const context = this.currentContext();
         context.break = oldContext.break;
@@ -331,4 +404,7 @@ export default class ForthBase {
         this.controlFlowState = null;
     }
 
+    add_constant(vocabulary, name, value) {
+        this.constants.create(vocabulary, name, value);
+    }
 }

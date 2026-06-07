@@ -1,9 +1,16 @@
 ( ---------------------------------- )
-( Setup - e.g. globals, messages.    )
+( Converts a valid CSV file to a DAT file and accompanying
+  It also introduces changes we have wanted - to automatically build
+  a map from column name to column index.
+  It will suss out the type of a column - string, number, date - but we can
+  also provide types and other metadata. This metadata file is created upon first successful import and export, and can be manually tweaked afterwards.
+)
 ( ---------------------------------- )
 
-" CSV Report" PRINTLN
-" ^^^^^^^^^^" PRINTLN
+
+( ---------------------------------- )
+( Setup - e.g. globals, messages.    )
+( ---------------------------------- )
 
 ( we read character by character, because a column may have a line break
   if it is a delimited string )
@@ -83,18 +90,37 @@
 
 0 VARIABLE field-count
 
-: read-row ( file-handle/fd -- row/array )
-    LOCAL file-handle
-    LOCAL types
+: read-field ( file-handle/fd -- field/string )
+  L:> file-handle
 
-    0 ARRAY::NARRAY LOCAL row
-    -1 LOCAL colno
+  BEGIN
+    L@ file-handle FILE::GET-CHAR
+
+    ( end of file )
+    DUP TYPEOF " null" S= IF BREAK THEN
+
+    ( end of line )
+    DUP CHAR::EOL = IF DROP BREAK THEN
+
+    DUP
+    COND
+      CHAR::DOUBLE-QUOTE =
+    END
+  REPEAT
+;
+
+: read-row ( types/array file-handle/fd -- row/array )
+    L:> file-handle
+    L:> types
+
+    0 ARRAY::NARRAY L:> row
+    -1 L:> colno
 
     BEGIN
-      LOCAL@ file-handle FILE::GET-CHAR
+      L@ file-handle FILE::GET-CHAR
 
       ( end of file )
-      DUP TYPEOF " null" EQ IF BREAK THEN
+      DUP TYPEOF " null" S= IF BREAK THEN
 
       ( end of line )
       DUP CHAR::EOL = IF DROP BREAK THEN
@@ -105,7 +131,7 @@
         CHAR::DOUBLE-QUOTE =
            OF
             DROP \ get rid of the character
-            LOCAL@ file-handle read-quoted-field
+            L@ file-handle read-quoted-field
           END
         CHAR::COMMA =
           OF
@@ -121,23 +147,22 @@
         DROP true
           OF
             \ Otherwise, collect until the next comma or end of line
-            LOCAL@ file-handle read-raw-field
+            L@ file-handle read-raw-field
             \ we have to fuss with the stack to get things in the right
             \ order
             2 NPICK STRING::CONCAT
           END
       END
 
-      LOCAL@ colno 1 + LOCAL! colno
-      \ [[ 1 + ]] LOCAL# colno
-      \ convert the string into the ultimate type; we now do this in a
-      \ separate pass, but this works too.
-      LOCAL@ types IF
-        LOCAL@ colno LOCAL@ types ARRAY::GET convert-field
+      L+! colno
+      \ note that if the types parameter is falsey, we don't attempt to convert
+      \ the field and just leave it as a string.
+      L@ types IF
+        L@ colno L@ types ARRAY::GET convert-field
       THEN
 
       \ append to the row
-      LOCAL@ row ARRAY::APPEND
+      L@ row ARRAY::APPEND
 
       \ handle line state, which is still on the stack
       COND
@@ -148,7 +173,7 @@
 
     REPEAT
 
-    LOCAL@ row
+    L@ row
 ;
 
 : convert-row ( row/array types/array -- converted-row/array )
@@ -190,39 +215,107 @@
   3 SWAP A@
 ;
 
-M{ ~coverage-type ~coverage-type-key ~provider ~provider-key ~date ~year-month-key } VARIABLE label-creators
+: guess-types
+;
 
-: main
+: row-to-dat ( csv-row/array -- dat-row/array )
+  L:> row
 
-  \ argument 1
-  LOCAL label-creator
-  " Total by: " PRINT LOCAL@ label-creator PRINTLN
+  0 ARRAY::NARRAY L:> dat
 
-  \ Argument 2
-  LOCAL input-file
-  " For file" PRINT LOCAL@ input-file PRINTLN
+  L@ row ARRAY::LENGTH 0 DO
+    \ remember, the index element is on top of stack :)
+    L@ row A@ DUP STRING::LENGTH L@ dat ARRAY::APPEND
+    L@ dat ARRAY::APPEND
+  LOOP
 
-  LOCAL@ input-file FILE::OPEN LOCAL file-handle
+  L@ dat
+;
 
-  A[ ~string ~date ~string ~string ~string ~date ~string ~number ~number ~number ~number ~number ~number ~number ~number ~number  ~string ] LOCAL row-types
-
-  ( read the header row )
-  false LOCAL@ file-handle read-row LOCAL header
-
-  M{ } LOCAL summary
-
-  0 LOCAL line-count
-
-  null LOCAL row
+: print-datx ( dat-row/array -- )
+  DUP L:> dat-row
+  ARRAY::LENGTH L:> len
+  " Length? " PRINT L@ len PRINTLN
+  0 L:> pos
 
   BEGIN
+    L@ len L@ pos = IF BREAK THEN
 
-    LOCAL@ row-types LOCAL@ file-handle read-row LOCAL! row
+    L@ pos L@ dat-row A@ TO-STRING PRINT
+    "  " PRINT
 
-    LOCAL@ row ARRAY::LENGTH 0 = IF
-      " Rows: " PRINT LOCAL@ line-count PRINTLN
+    L+! pos
+  REPEAT
+;
+
+: print-dat ( dat-row/array -- )
+  DUP L:> row
+  ARRAY::LENGTH 0 DO
+    L@ row A@ TO-STRING PRINT
+    "  " PRINT
+  LOOP
+;
+
+" HERE?" println
+
+: dat-to-string ( dat-row/array -- )
+  DUP L:> row
+  0 ARRAY::NARRAY L:> result
+  ARRAY::LENGTH 0 DO
+    L@ row A@ TO-STRING L@ result ARRAY::APPEND
+  LOOP
+  L@ result " " STRING::JOIN-ARRAY
+;
+
+
+: main
+  L:> input-file-name
+
+
+  FILE::RDONLY L@ input-file-name FILE::OPEN L:> file-handle
+
+  \ we need one file to write the header
+  # L@ input-file-name " .header.dat" STRING::JOIN L:> header-file-name
+
+  FILE::APPEND FILE::TRUNC & L@ header-file-name FILE::OPEN L:> header-fd
+
+  false L:> row-types
+
+  ( read the header row )
+  false L@ file-handle read-row row-to-dat L:> header
+  L@ header dat-to-string PRINTLN
+
+  L@ header-fd FILE::CLOSE
+
+  exit
+
+  \ And another file to write the data.
+
+
+  \ disable for now
+\    L@ header row-to-dat
+\    print-dat
+
+\    "  " STRING::INTERPOLATE-ARRAY PRINTLN
+
+  0 L:> line-count
+  null L:> row
+
+  BEGIN
+\      L@ line-count PRINTLN
+    L@ row-types L@ file-handle read-row
+
+
+    DUP ARRAY::LENGTH 0 = IF
+      " Rows: " PRINT L@ line-count PRINTLN
       BREAK
     THEN
+
+    row-to-dat
+
+    print-dat
+
+\      DROP
 
     \ we can also process the rows in a separate pass for debugging.
     \ LOCAL@ row-types convert-row DUP LOCAL row
@@ -230,31 +323,31 @@ M{ ~coverage-type ~coverage-type-key ~provider ~provider-key ~date ~year-month-k
     ( process line! )
 
     ( swap in your favorite label-creating word )
-    { LOCAL@ label-creator label-creators @ MAP::GET } LOCAL label-word
-    { LOCAL@ row LOCAL@ label-word EXEC } LOCAL label
+\      { LOCAL@ label-creator label-creators @ MAP::GET } LOCAL label-word
+\      { LOCAL@ row LOCAL@ label-word EXEC } LOCAL label
 
     \ get the value to sum
-    11 LOCAL@ row A@ LOCAL value
+\      11 LOCAL@ row A@ LOCAL value
 
     \ get the bin, if it exists.
-    LOCAL@ label LOCAL@ summary M@
+\      LOCAL@ label LOCAL@ summary M@
 
-    DUP NULLP IF
-      { LOCAL@ value LOCAL@ label LOCAL@ summary } MAP::SET
-      DROP
-    ELSE
-      { LOCAL@ value + LOCAL@ label LOCAL@ summary } MAP::SET
-    THEN
+\      DUP NULLP IF
+\        { LOCAL@ value LOCAL@ label LOCAL@ summary } MAP::SET
+\        DROP
+\      ELSE
+\        { LOCAL@ value + LOCAL@ label LOCAL@ summary } MAP::SET
+\      THEN
 
-    LOCAL@ line-count 1 + LOCAL! line-count
+    L+! line-count
 
   REPEAT
 
 
-  LOCAL@ file-handle file::close
+  L@ file-handle file::close
 
   " " PRINTLN
-
+(
   0 LOCAL max-key-width
   # LOCAL@ summary MAP::KEYS
   BEGIN
@@ -274,11 +367,15 @@ M{ ~coverage-type ~coverage-type-key ~provider ~provider-key ~date ~year-month-k
     SWAP
     LOCAL@ format PRINTF
     " " PRINTLN
-  REPEAT
+  REPEAT)
 ;
+
+(
+" CSV To DAT" PRINTLN
+" ^^^^^^^^^^" PRINTLN)
 
 main
 
-" " PRINTLN
-" Done!" PRINTLN
+\  " " PRINTLN
+\  " Done!" PRINTLN
 

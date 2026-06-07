@@ -61,9 +61,10 @@ export default class ForthConstants {
     //     }
     //     return this.set(entry.value, value);
     // }
-    // get(id) {
-    //     return this.constants[id];
-    // }
+
+    get(id) {
+        return this.constants[id];
+    }
 
     has(id) {
         return (id in this.constants);
