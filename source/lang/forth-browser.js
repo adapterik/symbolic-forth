@@ -3,14 +3,16 @@ function log(message) {
 }
 
 export default class WebUI {
-    constructor() {
+    constructor({outputSelector, consoleSelector}) {
+        this.outputSelector = outputSelector || '#output';
+        this.consoleSelector = consoleSelector || '#console';
+
         this.initializeOutputElement();
         this.initializeConsoleElement();
     }
 
     initializeOutputElement() {
-        this.output_selector = '#output';
-        this.output_element = document.querySelector(this.output_selector);
+        this.output_element = document.querySelector(this.outputSelector);
 
         if (!this.output_element) {
             throw new Error(`output element not found with selector '${this.output_selector}'`);
@@ -18,8 +20,7 @@ export default class WebUI {
     }
 
     initializeConsoleElement() {
-        this.console_selector = '#console';
-        this.console_element = document.querySelector(this.console_selector);
+        this.console_element = document.querySelector(this.consoleSelector);
 
         if (!this.console_element) {
             throw new Error(`console element not found with selector '${this.console_selector}'`);
@@ -52,8 +53,6 @@ export default class WebUI {
 
 
     /** CONSOLE **/
-
-
 
     console_error(message) {
         // TODO: make this configurable at the system level.

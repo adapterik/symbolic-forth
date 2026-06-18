@@ -16,7 +16,7 @@ VAR input-file
 
 10 STACK::CREATE VAR mode-stack
 
-~normal mode-stack @ STACK::PUSH
+SYM ormal mode-stack @ STACK::PUSH
 
 ( we read character by character, because a column may have a line break
   if it is a delimited string )
@@ -45,12 +45,12 @@ VAR input-file
   SWAP DROP
   DUP EOF = IF
     DROP
-    ~ EOF
+   SYM  EOF
   ELSE
     EOL = IF
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
   SWAP
@@ -69,12 +69,12 @@ VAR input-file
   DUP EOF = IF
     ( end of file )
     DROP ( the matching char code )
-    ~EOF
+   SYM EOF
   ELSE
     EOL = IF
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
   SWAP
@@ -82,9 +82,9 @@ VAR input-file
 
 : convert-field ( field-value/string type/symbol -- value/any )
  COND
-   ~string EQ OF ( do nothing, just keep string ) END
-   ~number EQ OF STRING::TO-NUM END
-   ~date EQ OF " -" SWAP STRING::SPLIT END
+  SYM string EQ OF ( do nothing, just keep string ) END
+  SYM number EQ OF STRING::TO-NUM END
+  SYM date EQ OF " -" SWAP STRING::SPLIT END
  END
 ;
 
@@ -120,7 +120,7 @@ VAR input-file
             ( this can happen with an empty - not even a space - field )
             ( we create an empty string field )
             DROP \ get rid of the character
-            ~OK " "
+           SYM OK " "
           END
         EOL =
           OF DROP CONTINUE END
@@ -148,8 +148,8 @@ VAR input-file
 
       \ handle line state
       COND
-        ~EOF EQ OF BREAK END
-        ~EOL EQ OF BREAK END
+       SYM EOF EQ OF BREAK END
+       SYM EOL EQ OF BREAK END
         DROP true OF END
       END
 
@@ -197,12 +197,12 @@ VAR input-file
   3 SWAP A@
 ;
 
-M{ ~coverage-type ~coverage-type-key ~provider ~provider-key ~date ~year-month-key } VAR label-creators
+M{SYM coverage-typeSYM coverage-type-keySYM providerSYM provider-keySYM dateSYM year-month-key } VAR label-creators
 
 : main
   input-file @ FILE::OPEN LOCAL file-handle
 
-  A[ ~string ~date ~string ~string ~string ~date ~string ~number ~number ~number ~number ~number ~number ~number ~number ~number  ~string ] LOCAL row-types
+  A[SYM stringSYM dateSYM stringSYM stringSYM stringSYM dateSYM stringSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM number SYM string ] LOCAL row-types
 
   ( read the header row )
   false LOCAL@ file-handle read-row LOCAL header

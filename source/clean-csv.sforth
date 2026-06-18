@@ -10,7 +10,7 @@ input-file @ FILE::OPEN VARIABLE file-handle
 
 10 STACK::CREATE VARIABLE mode-stack
 
-~normal mode-stack @ STACK::PUSH
+SYM normal mode-stack @ STACK::PUSH
 
 ( we read character by character, because a column may have a line break
   if it is a delimited string )
@@ -33,12 +33,12 @@ input-file @ FILE::OPEN VARIABLE file-handle
   SWAP DROP
   DUP 0 = IF
     DROP
-    ~ EOF
+   SYM  EOF
   ELSE
     10 = IF
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
 ;
@@ -55,7 +55,7 @@ input-file @ FILE::OPEN VARIABLE file-handle
   DUP 0 = IF
     ( end of file )
     DROP ( the matching char code )
-    ~EOF
+   SYM EOF
   ELSE
     10 = IF
       ( end of line )
@@ -63,9 +63,9 @@ input-file @ FILE::OPEN VARIABLE file-handle
         any field string before the end of the line. )
       ( the same does not apply above, since the delimiter must always be
         hit before the end of line or file, otherwise it is an error )
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
 ;
@@ -95,11 +95,11 @@ input-file @ FILE::OPEN VARIABLE file-handle
       DUP STR '"' STRING::CHAR-CODE =
       IF
         file-handle @ read-quoted-field
-        DUP ~EOF EQ IF
+        DUP SYM EOF EQ IF
           DROP ( line status )
           LOCAL@ row ARRAY::APPEND
           BREAK
-        ELSE DUP ~EOL EQ IF
+        ELSE DUPSYM EOL EQ IF
           DROP ( line status )
           LOCAL@ row ARRAY::APPEND
           BREAK
@@ -113,12 +113,12 @@ input-file @ FILE::OPEN VARIABLE file-handle
         \ Otherwise, collect until the next comma or end of line
         file-handle @ read-raw-field
         ( TODO: This is a case where a switch would make a lot of sense )
-        DUP ~EOF EQ IF
+        DUPSYM EOF EQ IF
           DROP ( line status )
           STRING::CONCAT
           LOCAL@ row ARRAY::APPEND
           BREAK
-        ELSE DUP ~EOL EQ IF
+        ELSE DUPSYM EOL EQ IF
           DROP ( line status )
           STRING::CONCAT
           LOCAL@ row ARRAY::APPEND
@@ -161,7 +161,7 @@ input-file @ FILE::OPEN VARIABLE file-handle
        or perhaps a bookmark function that lets us mark the top item,
        then swap it later to the top when it has been buried.
       )
-     \       ~| SWAP STR '"' SWAP STR '"' ~| STRING::JOIN
+     \      SYM | SWAP STR '"' SWAP STR '"'SYM | STRING::JOIN
      # SWAP STR '"' SWAP STR '"' STRING::JOIN
    THEN
 ;
@@ -183,11 +183,11 @@ input-file @ FILE::OPEN VARIABLE file-handle
   LOCAL value
   LOCAL type
 
-  LOCAL@ type ~string EQ IF
+  LOCAL@ type SYM string EQ IF
      LOCAL@ value WRAP-STRING
-  ELSE LOCAL@ type ~date EQ IF
+  ELSE LOCAL@ type SYM date EQ IF
     LOCAL@ value WRAP-DATE
-  ELSE LOCAL@ type ~number EQ IF
+  ELSE LOCAL@ type SYM number EQ IF
     LOCAL@ value WRAP-NUMBER
   THEN THEN THEN
 ;
@@ -196,23 +196,23 @@ input-file @ FILE::OPEN VARIABLE file-handle
   LOCAL value
   LOCAL type
 
-  L@ type ~string EQ IF
+  L@ type SYM string EQ IF
      L@ value WRAP-STRING
-  ELSE L@ type ~date EQ IF
+  ELSE L@ type SYM date EQ IF
     L@ value WRAP-DATE
-  ELSE L@ type ~number EQ IF
+  ELSE L@ type SYM number EQ IF
     L@ value WRAP-NUMBER
   THEN THEN THEN
 ;
 
 : WRAP-TYPE ( type/symbol field/string -- field/string|number )
-  DUP ~string EQ IF
+  DUP SYM string EQ IF
      DROP
      WRAP-STRING
-  ELSE DUP ~date EQ IF
+  ELSE DUP SYM date EQ IF
     DROP
     WRAP-DATE
-  ELSE DUP ~number EQ IF
+  ELSE DUP SYM number EQ IF
     DROP
     WRAP-NUMBER
   ELSE
@@ -223,9 +223,9 @@ input-file @ FILE::OPEN VARIABLE file-handle
 
 \  : WRAP-TYPE/CASE ( type/symbol field/string -- field/string|number )
 \    CASE
-\      ~string OF WRAP-STRING ENDOF
-\      ~date   OF WRAP-DATE   ENDOF
-\      ~number OF WRAP-NUMBER ENDOF
+\     SYM string OF WRAP-STRING ENDOF
+\     SYM date   OF WRAP-DATE   ENDOF
+\     SYM number OF WRAP-NUMBER ENDOF
 \      ANY     OF ( raise exception ) ENDOF
 \    ENDCASE
 \  ;
@@ -234,9 +234,9 @@ input-file @ FILE::OPEN VARIABLE file-handle
 
 : WRAP-TYPE/COND ( type/symbol field/string -- field/string|number )
   COND
-    ~string EQ OF WRAP-STRING END
-    ~date   EQ OF WRAP-DATE   END
-    ~number EQ OF WRAP-NUMBER END
+   SYM string EQ OF WRAP-STRING END
+   SYM date   EQ OF WRAP-DATE   END
+   SYM number EQ OF WRAP-NUMBER END
     DROP true  OF ( raise exception ) END
   END
 ;
@@ -247,7 +247,7 @@ input-file @ FILE::OPEN VARIABLE file-handle
 
     LOCAL@ row ARRAY::LENGTH LOCAL row-len
     0 LOCAL index
-    A[ ~string ~date ~string ~string ~string ~date ~string ~number ~number ~number ~number ~number ~number ~number ~number ~number  ~string ] LOCAL types
+    A[SYM stringSYM dateSYM stringSYM stringSYM stringSYM dateSYM stringSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM number SYM string ] LOCAL types
 
     LOCAL@ row-len 0 DO
       LOCAL@ index LOCAL@ row ARRAY::GET ( value)

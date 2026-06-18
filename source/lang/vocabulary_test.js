@@ -7,6 +7,8 @@ const TestVocabulary = (forth, options = {}) => {
   run_count += 1;
 
   forth.interpreter.run( `
+  " TEST" " A vocabulary for testing" VOCABULARY
+
   0 VARIABLE test::TEST_SUCCESSES
   0 VARIABLE test::TEST_FAILURES
 

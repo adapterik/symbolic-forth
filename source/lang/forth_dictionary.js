@@ -1,14 +1,24 @@
 export default class ForthDictionary {
     constructor() {
+        this.vocabularies = {};
         this.dictionaries = {};
     }
+
+    add_vocabulary(name, description) {
+       name = name.toUpperCase();
+       this.vocabularies[name] = {name, description};
+    }
+
     add(vocabulary, name, type, value) {
         vocabulary = vocabulary.toUpperCase();
+        if (!(vocabulary in this.vocabularies)) {
+            throw new Error(`vocabulary '${vocabulary}' has not yet been defined`);
+        }
         name = name.toUpperCase();
         if (!(vocabulary in this.dictionaries)) {
             this.dictionaries[vocabulary] = {};
         }
-        this.dictionaries[vocabulary][name] = {type, value};
+        this.dictionaries[vocabulary][name] = [type, value];
     }
 
 

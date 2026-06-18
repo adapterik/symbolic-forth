@@ -205,7 +205,7 @@ function update_display(forth) {
 
     items_el.innerHTML = '';
 
-    const render_stack_item = ({type, value}) => {
+    const render_stack_item = ([type, value]) => {
         const item_el = el('div');
         item_el.classList = 'item';
         const type_el = el('div');
@@ -216,7 +216,7 @@ function update_display(forth) {
 
         value_el.classList = 'value';
         type_el.innerText = type;
-        value_el.innerText = forth.value_to_string({type, value});
+        value_el.innerText = forth.value_to_string([type, value]);
 
         items_el.appendChild(item_el);
     };

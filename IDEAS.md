@@ -37,7 +37,7 @@ But many smaller cases too, like VAR, CONST, and others in which the thing to be
 
 But this is "Symbolic FORTH" and perhaps we should just go for it. 
 
-We can write `10 ~foo VAR` rather than `10 VAR foo`. And then `~foo @` or `10 ~foo !`.
+We can write `10SYM foo VAR` rather than `10 VAR foo`. And then `~foo @` or `10SYM foo !`.
 
 Of course we still need parsing words, for colon, conditionals, loops, and any situation in which we need to form a word list. But perhaps we can restrict parsing to such things?
 
@@ -78,7 +78,48 @@ To make this more palatable, we need to really incorporate this as a very legiti
 
 Another consideration is whether we need compile-time or run-time context. So far our SF does compiling right before execution in a typical context, say the main body of the program.
 
-E.g. an array is defined via compilation, but then the compiled word list is executed right afterwards, so it gets the context.
+E.g. an array is defined via compilation, but then the compiled word list is executed right afterwmyvarards, so it gets the context.
 
 But array elements could be pre-defined as an anoymous word list - though the word list, like a word definition, would be achieved via compilation anyway, so does it really make a difference?
 
+## Keep it Simple
+
+So I've decided to pull back from some of the complexity.
+
+Recognizers are disappearing. Let's rely upon words and values as much as possible.
+
+Already true, false, and null are gone, replaced simply by words.
+
+All that is left are numbers and words ... which can easily be replaced with a test for whether a token is a number, otherwise a word - the classic forth interpreter. We COULD also have NUM 123 if we want to be pedantic, which allows us to also have INT 123, FLOAT 123, etc.
+
+## Keep it short
+
+So one way to introduce values is words, as described above. To wit:
+
+- TRUE, FALSE, NULL words push the respective values onto the stack
+- STR |..| and " " for strings
+- SYM foo for symbols
+- A[ .. ] array
+- M[ .. ] map
+- DAT YYYY/MMM/DD for date
+
+
+## Parsing in FORTH words
+
+We currently implement all parsing words in Javascript. But what would it take to do so in FORTH itself? Other than being painfully slow, it is worth thinking about. For one day we may port this to C, and the performance pain may go away or be much reduced.
+
+
+## FORTH as functional language
+
+FORTH breaks the abstraction wall of the programming languages runtime environment, or constructed mechanisms for passing parameters and return values. These are mechanisms inherent to a functional programming language. They also are inherently effects on the surrounding environment. I know that in functional programming one just closes ones eyes to these things. But in FORTH you need to face them directly. 
+
+I think a comparison of these features and how they are implemented in functional languages or functional styles of other languages would be interesting.
+
+
+## I don't know if I like ...
+
+... the way some words will parse ahead, and some will rely upon a special word seeting the stack.
+
+For instance, `SYM foo bar @` does not look right to me. `SYM` is a compile time parser to create a symbol from the following token, and `bar @` pushes the bar variable id onto the stack and then fetches the associated value and pushes that to the stack.
+
+I almost feel like `SYM foo VAR@ bar` would be nicer. It is certainly more consistent, and it does feel like using the variable name from the token and compiling a word that either does the lookup or pre-lookups up the variable id and inserts that word would be just as "good".

@@ -14,33 +14,6 @@ export default class ForthInterpreter {
 
     initialize() {
         this.input_code = '';
-
-        // These are the built-in things we can recognize as we straight-up
-        // parse the program text. If we want to recognize additional forms
-        // (e.g. a date, array, object, url, etc.) we can place them here, or
-        // add a method to add a recognizer.
-        this.recognizers = [
-            {
-                name: 'Word',
-                recognizer: Recognizers.forth_recognizer_word
-            },
-            {
-                name: 'Number',
-                recognizer: Recognizers.forth_recognizer_number
-            },
-            {
-                name: 'Bool',
-                recognizer: Recognizers.forth_recognizer_bool
-            },
-            {
-                name: 'Null',
-                recognizer: Recognizers.forth_recognizer_null
-            },
-            {
-                name: 'Symbol',
-                recognizer: Recognizers.forth_recognizer_symbol
-            }
-        ]
     }
 
     add_code(code_text) {
@@ -70,17 +43,20 @@ export default class ForthInterpreter {
         if (code_text) {
             this.add_code(code_text);
         }
-        const context = this.forth.new_context({cfl: 'exit'});
+        // const context = this.forth.new_context({cfl: 'exit'});
 
+        this.forth.enterContext();
 
         let token;
         for (;;) {
             token = this.next_input_token();
             if (token === null) {
+                this.forth.leaveContext();
                 return;
             }
 
-            const word = this.find_recognizer(token);
+            const word = this.token_to_word(token);
+            // const word = this.find_recognizer(token);
 
             if (!word) {
                 // throw new Error(`No recognizer fo '${token}'`);
@@ -119,14 +95,18 @@ export default class ForthInterpreter {
                 this.forth.resetControlFlowState();
             }
 
-            if (this.state === 'error') {
-                return;
-            }
+            // DISABLED - we need to always clean up afterwards, or redesign
+            // things so that the forth is nuked when we end the interpreter.
+            // if (this.state === 'error') {
+            //     return;
+            // }
 
             if (this.onInterp) {
                 this.onInterp(this.forth);
             }
         }
+
+        this.forth.leaveContext();
     }
 
     run(code_text) {
@@ -147,21 +127,11 @@ export default class ForthInterpreter {
         // skip any blanks // skip any blanks
         let skipped = 0;
         while (/\s/.test(this.input_code[skipped])) {
-            // console.log('-skipping', this.input_code[skipped].charCodeAt(0));
             skipped += 1;
             if (skipped >= this.input_code.length) {
-                // console.log('-skipping-done', skipped);
-                // all blanks?
                 return null;
             }
         }
-
-        // console.log('-skipping-complete', skipped, "'", this.input_code[skipped], "'", this.input_code[skipped].charCodeAt(0));
-
-        // if (this.input_code.length === 1) {
-            // console.log('hmm', this.input_code.charCodeAt(0));
-        // }
-        // console.log('*** next input token...', skipped, this.input_code.length, this.input_code.charCodeAt(0));
 
         // get the next upcoming blank, if any
         let token_end = skipped;
@@ -239,9 +209,7 @@ export default class ForthInterpreter {
         }
 
         const stop_pos = this.input_code.indexOf(stop_string);
-        // console.log('vvvvvvvvv');
-        // console.log('read code until', stop_string, stop_pos, this.input_code.substring(0, stop_pos + stop_string.length));
-        // console.log('^^^^^^^^^');
+
         if (stop_pos >= 0) {
             // replace input code with everything after the stop string.
             this.input_code = this.input_code.substring(stop_pos + stop_string.length);
@@ -251,18 +219,30 @@ export default class ForthInterpreter {
         }
     }
 
-    find_recognizer(token) {
-        for (const {name, recognizer} of this.recognizers) {
-            const item = recognizer(this.forth, token);
-
-            if (item) {
-                return item;
-            }
+    token_to_word(token) {
+        const numberish = Number(token);
+        if (!isNaN(numberish)) {
+            return () => {
+                return () => {
+                    this.forth.parameter_stack.push(this.forth.number_value(numberish));
+                };
+            };
         }
+
+        const {vocabulary, name} = this.forth.dictionary.parse_token(token);
+        const dict_entry = this.forth.dictionary.get(vocabulary, name);
+
+        if (!dict_entry) {
+            throw new Error(`cannot resolve token '${token}': not a number or word`);
+        }
+        const [type, value] = dict_entry;
+
+        return value.func;
     }
 
     compile_and_run_token(token) {
-        const word = this.find_recognizer(token);
+        // const word = this.find_recognizer(token);
+        const word = this.token_to_word(token);
         if (!word) {
             console.log('no recognizer', this.input_code);
             throw new Error(`No recognizer for ${token}.`);
@@ -286,17 +266,16 @@ export default class ForthInterpreter {
 
         for (;;) {
             token = this.next_input_token();
-            // console.log('compile_until: token:', token);
+
             if (token === null) {
                 return;
             }
 
-        // for (token = this.next_input_token(); token != null; token = this.next_input_token()) {
             if (until_tokens.includes(token.toUpperCase())) {
                 break;
             }
 
-            const word = this.find_recognizer(token);
+            const word = this.token_to_word(token);
 
             if (!word) {
                 console.log('no recognizer', this.input_code);
@@ -318,12 +297,10 @@ export default class ForthInterpreter {
 
         for (;;) {
             token = this.next_input_token();
-            // console.log('compile_until: token:', token);
             if (token === null) {
                 return;
             }
 
-            // for (token = this.next_input_token(); token != null; token = this.next_input_token()) {
             if (until_tokens.includes(token.toUpperCase())) {
                 break;
             }
@@ -333,45 +310,8 @@ export default class ForthInterpreter {
         return tokens
     }
 
-    // collect_values_until(until_tokens, context) {
-    //     let compiled_words = [];
-    //     let token;
-    //
-    //     for (token = this.next_input_token(); token != null; token = this.next_input_token()) {
-    //         if (until_tokens.includes(token.toUpperCase())) {
-    //             break;
-    //         }
-    //
-    //         // TODO: exec seems to be obsolete...
-    //         const word = this.find_recognizer(token, COMPILE_TIME, context);
-    //
-    //         if (!word) {
-    //             throw new Error(`No recognizer for ${token}.`);
-    //         }
-    //
-    //         // const {exec, action} = recognizer;
-    //
-    //         // execute it at interp / compile time
-    //         const runtime_word = word(context);
-    //
-    //         // if the word has a run time action, add it
-    //         // to the xt list.
-    //         if (runtime_word) {
-    //             compiled_words.push(runtime_word);
-    //         }
-    //
-    //     }
-    //     return [token, compiled_words];
-    // }
-
     run_word_list(word_list, controlFlowLevel) {
-
         const context = this.forth.currentContext();
-
-        // TODO: not sure about this.
-        // context.exit = false;
-        // context.recurse = false;
-        // context.break = false;
 
         do {
             context.exit = false;

@@ -1,16 +1,4 @@
-// function log_word({forth}) {
-//     return () => {
-//         const {type, value} = forth.parameter_stack.pop();
-//         switch (type) {
-//             case 'string': forth.log(forth.string.get(value)); break;
-//             case 'symbol': forth.log(value); break;
-//             case 'number': forth.log('' + value); break;
-//             case 'object': forth.log(`[object ${value}]`); break;
-//             case 'null':  break;
-//             case 'bool': forth.log(value ? 'true' : 'false'); break;
-//         }
-//     }
-// }
+
 
 function cr_word({forth}) {
     return () => {
@@ -30,47 +18,40 @@ function clear_console_word({forth}) {
     }
 }
 
-// function space_word({forth}) {
-//     return () => {
-//         forth.output_text(' ');
-//     };
-// }
-//
-// function spaces_word({forth}) {
-//     return () => {
-//         const {type, value} = forth.parameter_stack.pop();
-//         assert_type(type, 'number');
-//         forth.output_text(' '.repeat(value));
-//     }
-// }
-
-
-function output_value(forth, {type, value}) {
-    forth.ui.output_text(forth.to_string({type, value}));
+function output_value(forth, forthValue) {
+    forth.ui.output_text(forth.to_string(forthValue));
 }
 
 function dot_word({forth}) {
     return () => {
-        output_value(forth, forth.parameter_stack.pop());
+        output_value(forth, forth.pop_any());
+        forth.ui.output_text(' ');
+    };
+}
+
+function print_word({forth}) {
+    return () => {
+        output_value(forth, forth.pop_any());
     };
 }
 
 function println_word({forth}) {
     return () => {
-        const value = forth.parameter_stack.pop();
-        output_value(forth, value);
-        forth.ui.output_cr();
+        const value = forth.pop_any();
+        forth.ui.println(forth.to_string(value));
+        // output_value(forth, value);
+        // forth.ui.output_cr();
     };
 }
 
 function pop_until_stackmark(forth) {
     const items = [];
     for (;;) {
-        const {type, value} = forth.parameter_stack.pop();
+        const [type, value] = forth.pop_any();
         if (type === 'symbol' && forth.symbols.get(value).hasProp('stackmark')) {
           break;
         } else {
-          items.push({type, value});
+          items.push([type, value]);
         }
     }
     return items;
@@ -82,7 +63,7 @@ function printf_word({forth}) {
         const items = pop_until_stackmark(forth);
 
         const params = [];
-        for (const {type, value} of items) {
+        for (const [type, value] of items) {
             switch (type) {
                 case 'string': params.push(forth.strings.get(value)); break;
                 case 'number': params.push(value); break;
@@ -98,42 +79,17 @@ function printf_word({forth}) {
 
 function con_word({forth}) {
     return () => {
-        const {type, value} = forth.parameter_stack.pop();
+        const [type, value] = forth.pop_any();
         switch (type) {
             case 'string': forth.ui.print_console(forth.strings.get(value)); break;
             case 'symbol': forth.ui.print_console(value); break;
             case 'number': forth.ui.print_console('' + value); break;
-            case 'object': forth.ui.print_console(`[object ${value.type}, ${value.value}]`); break;
+            case 'object': forth.ui.print_console(`[object ${value[0]}, ${value[1]}]`); break;
             case 'null':  break;
             case 'bool': forth.ui.print_console(value ? 'true' : 'false'); break;
         }
     };
 }
-
-// function dot_html(forth, message) {
-//     // const dot_element = document.getElementById('output');
-//     // dot_element.innerHTML = dot_element.innerHTML + message;
-//
-//     const selector = forth.constants.get('io', 'output_selector')
-//     const dot_element = document.querySelector(selector);
-//     if (!dot_element) {
-//         throw new Error(`output element not found with selector '${selector}'`);
-//     }
-//     dot_element.innerText = dot_element.innerHTML + message;
-// }
-/*
- d *ot_html_word() {
- return (forth) => {
- const {type, value} = forth.parameter_stack.pop();
- switch (type) {
-     case 'string': dot_html(forth, forth.string.get(value)); break;
-     case 'symbol': dot_html(forth, value); break;
-     case 'number': dot_html(forth, '' + value); break;
-     case 'null':  break;
-     case 'bool': dot_html(forth, value ? 'true' : 'false'); break;
-     }
-     };output_value
-     }*/
 
 function dot_stack_word({forth}) {
     const format_stack_item = (value) => {
@@ -153,24 +109,17 @@ function dot_stack_word({forth}) {
         for (let i = forth.parameter_stack.size() - 1; i >= 0; i -= 1) {
             const item = forth.parameter_stack.get(i);
             OUT('  ');
-            OUT(`${format_stack_item(item)} (${item.type})`);
+            OUT(`${format_stack_item(item)} (${item[0]})`);
             CR();
         }
         OUT('BOTTOM'); CR();
     }
 }
 
-let run_count = 0;
-
 const IOVocabulary = (forth, options = {}) => {
-    // if (run_count > 0 && !options.fresh) {
-    //     return;
-    // }
-    run_count += 1;
-
     // forth.add_word('', "LOG", log_word);
     forth.add_word('', ".", dot_word);
-    forth.add_word('', "PRINT", dot_word);
+    forth.add_word('', "PRINT", print_word);
     forth.add_word('', 'PRINTLN', println_word);
     forth.add_word('', 'PRINTF', printf_word);
     forth.add_word('', "CON", con_word);

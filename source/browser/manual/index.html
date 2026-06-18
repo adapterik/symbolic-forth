@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Manual | Symbolic FORTH</title>
+    <link rel="stylesheet" href="index.css">
+    <meta charset="utf-8">
+</head>
+<body class="manual-page">
+
+<div id="header">
+    <div id="title">
+        Manual
+    </div>
+    <div id="menu">
+        <a href="index.html">Intro</a>
+        <a href="types.html" class="selected">Types</a>
+        <a href="vocabularies/index.html">Vocabularies</a>
+        <a href="ui.html">UI</a>
+        <a href="../index.html" style="margin-left: 3rem;">Back Home</a>
+    </div>
+    <div id="alert"></div>
+</div>
+
+<div id="content" class="content">
+    <h1>Symbolic FORTH</h1>
+
+    <h2>A Different FORTH</h2>
+
+    <p>
+        Symbolic FORTH is one that reflects the traditional FORTH approach to programming, yet operates at a "higher level", lacking much of the low-level machinery of classic, traditional FORTH, but bringing a lot of other functionality.
+    </p>
+    <p>
+        It is implemented in Javascript, so is well-suited to programming in a web browser through the browser's built-in javascript engine as well as on the command line through standalone javascript implementations like QuickJS. As a result its internals are not integers, pointers and circular stacks, as in low-level FORTHS, but core Javascript structures like numbers, maps and arrays. In addition, Javascript itself has an extensive API for manipulating its types, constructions programs, etc. so our foundation is already much more functional than Assembly language or plain C - the basis for most FORTH implementations.
+    </p>
+
+    <h3>How is Symbolic FORTH Similar to other FORTHS?</h3>
+
+    <p>
+        I link to think of FORTH as an abstract virtual machine - there are certain properties of a FORTH system that I consider fundamental. Symbolic FORTH exists in that abstract virtual machine. In sum, here is what I mean:
+    </p>
+
+    <ul>
+        <li>It is <em>stack based</em>: It relies upon a parameter stack for arguments to and output from words (like functions)
+        </li>
+        <li>It supports a return stack, but does not use it for anything itself, it is just available as a useful programming tool</li>
+        <li>
+            It is <em>concatenative</em> in that the program flow is strictly linear.
+        </li>
+        <li>The language itself parses and compiles - it enables <em>words</em> to both parse, compile, and execute at run time</li>
+        <li>The fundamental tokens recognized by the parser are only integers and words; parsing words provide all of any specialized forms like numeric forms, arrays, maps, dates.</li>
+        <li>Supports variables, constants, locals, loops, colon-words</li>
+    </ul>
+
+    <h3>How is Symbolic FORTH different from other FORTHS?</h3>
+
+    <p>
+        As much as I like to think of Symbolic FORTH as a real FORTH, it does differ by omission and addition:
+    </p>
+
+    <h4>Omissions</h4>
+
+    <ul>
+        <li>
+            It does not utilize or allow direct memory access
+        </li>
+        <li>
+            It uses native Javascript data types to implement all of its own data types
+        </li>
+        <li>
+            The core wordset is larger than many minimal FORTHs, due to the fact that we cannot (or have not) implemented more sophisticated features requiring raw memory access - e.g. structures, arrays, floats.
+        </li>
+    </ul>
+
+    <h4>Additions</h4>
+
+    <ul>
+        <li>
+            Vocabularies are used extensively
+        </li>
+        <li>
+            Locals are supported and used, when appropriate, liberally.
+        </li>
+        <li>
+            The basic numeric type is a JS "number" - which can be treated as a float or integer
+        </li>
+        <li>
+            Rather than using addresses to point to data in memory (as opposed to the stack), non-stack data is stored in global structures and accessed by identifier.
+        </li>
+        <li>
+            Types are supported and stored with all FORTH values
+        </li>
+        <li>
+            Built in types include number, string, symbol, map, array, date, boolean, null
+        </li>
+    </ul>
+
+    <h3>Symbolic FORTH Features</h3>
+
+    <p>
+        These are some of the things I consider special about Symbolic FORTH
+    </p>
+
+    <p>
+        Runs in the browser or command line
+    </p>
+
+    <p>
+        Has testing framework - minimal but works in browser and command line
+    </p>
+
+    <p>
+        Useful built-in types
+    </p>
+
+    <p>
+        Easy to extend with Javascript
+    </p>
+
+    <p>
+        Locals and type-specific words - e.g. L:>[ spreads array elements into local variables
+    </p>
+
+    <h3>In Progress or To Do</h3>
+
+    <p>
+        Error handling is undecided - exceptions need to be handled because JS may throw them, but whether we want to rely upon them or use value-based errors is something to be decided and considered
+    </p>
+
+    <p>
+        Colon-words do not currently support parsing, though Javascript-defined ones do.
+    </p>
+
+    <p>
+        Functionality is added as needed - so stuff that may be in a fully implemented FORTH are surely missing.
+    </p>
+
+    <p>
+        Loading of vocabularies is not supported in FORTH code itself
+    </p>
+
+    <h3>Etc.</h3>
+
+    <p>
+
+        Some types are read in literally and placed directly on stack. These include number, symbol and boolean. Others are stored separately and a reference placed on the stack. These include string, map, and array.
+    </p>
+
+    <p>
+        The purpose of this project is education and fun! First, to teach the fundamentals of FORTH, at least at the high level (low level FORTH, the original and most prevalent, this is not) - stacks, reverse polish notation, words, the parser, compiler and interpreter. Second, it is also fun to put this together. That is, it has been fun for me, but I hope it is fun for others to tinker with as well.
+    </p>
+
+
+</div>
+
+<!-- <script src="manual.js" type="module"></script> -->
+
+</body>
+
+</html>

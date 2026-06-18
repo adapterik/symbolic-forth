@@ -1,156 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Manual | Symbolic FORTH</title>
-    <link rel="stylesheet" href="manual.css">
+    <title>Core | Vocabularies | Manual | Symbolic FORTH</title>
+    <link rel="stylesheet" href="../index.css">
+    <link rel="stylesheet" href="index.css">
     <meta charset="utf-8">
 </head>
 <body class="manual-page">
 
 <div id="header">
     <div id="title">
-        Manual
+        Vocabularies
     </div>
     <div id="menu">
-        <a href="index.html">Home</a>
-        <a href="testing.html">Testing</a>
-        <a href="programming.html">Programming</a>
-        <a href="applications.html">Applications</a>
-        <a href="manual.html" class="selected">Manual</a>
-        <a href="about.html"">About</a>
+        <a href="../index.html">Intro</a>
+        <a href="../types.html">Types</a>
+        <a href="index.html" class="selected">Vocabularies</a>
+        <a href="../ui.html">UI</a>
+        <a href="../../index.html" style="margin-left: 3rem;">Back Home</a>
     </div>
     <div id="alert"></div>
 </div>
-
 <div id="content">
-    <h1>Symbolic FORTH</h1>
+    <h1>Core Vocabulary</h1>
 
-    <h2>A Different FORTH</h2>
+    <ul>
+        <li>
+            <a href="#comments">Comments</a>
+        </li>
+        <li>
+            <a href="#parameter-stack">Parameter Stack</a>
+        </li>
+        <li>
+            <a href="#return-stack">Return Stack</a>
+        </li>
+        <li>
+            <a href="#numeric-comparisons">Numeric Comparisons</a>
+        </li>
+        <li>
+            <a href="#variables">Variables</a>
+        </li>
+        <li>
+            <a href="#constants">Constants</a>
+        </li>
+        <li>
+            <a href="#locals">Locals</a>
+        </li>
+    </ul>
 
-    <p>
-        Symbolic Forth is a FORTH that reflects both the traditional FORTH approach to programming, yet also brings some concepts and conveniences from my programming career. It is oriented to the browser, so its internals are not integers, pointers and circular stacks, but core Javascript structures like numbers, maps and arrays.
-    </p>
-
-    <p>
-        Some types are read in literally and placed directly on stack. These include number, symbol and boolean. Others are stored separately and a reference placed on the stack. These include string, map, and array.
-    </p>
-
-    <p>
-        The purpose of this project is education and fun! First, to teach the fundamentals of FORTH, at least at the high level (low level FORTH, the original and most prevalent, this is not) - stacks, reverse polish notation, words, the parser, compiler and interpreter. Second, it is also fun to put this together. That is, it has been fun for me, but I hope it is fun for others to tinker with as well.
-    </p>
-
-    <h2>Types</h2>
-
-    <p>
-        FORTH does not traditionally have any sense of types in the modern sense. Or rather, should we say, it is based on the fundametal type being the natural word size of the computer it is running on. There is essentially no type checking. More complex types like doubles, strings, arrays, and so forth do exist, but are typically created and used with bespoke "words" (like functions).
-    </p>
-
-    <p>
-        This FORTH is based on browser Javascript so it has some basic types available underneath, and I've chosen to expose these to the language. This allows Symbolic FORTH to be more easily used to program directly against the browser DOM. Yes, it might be fun one day to fork this FORTH and limit it to a more basic type and build from there, but not yet, perhaps never.
-    </p>
-
-
-    <h3>Recognizers - Parsing</h3>
-
-    <p>
-        Recent FORTHs have utilized a technique called "recognizers" to assist in structured, or at least organized, parsing. This project does as well, because it is a handy conceptual model for both partitioning responsibility within the parser, but also for being able to expand it as needed.
-    </p>
-    <p>
-        A recognizer does what its name suggests - it recognizes something in a FORTH program. It does so at "parsing time" - that is, when the text of the program is being consumed by the FORTH system, and turned into something that can be executed. A recognizer is a small program that, given a text token (essentially a "word" - but not in the FORTH sense of "word") says "aha, I know what that is, I'll handle it!"
-    </p>
-    <p>
-        This recognition is one way of thinking of parsing. A parser needs to make sense of the text given to it.
-    </p>
+    <h3 id="comments">Comment Words</h3>
 
     <p>
-        Clasically, FORTH can only recognize a token as a number (usually just an integer) and if that fails assumes it is a word and if that fails it considers the program to be in error.
+        Comments are used to add textual descriptions to a program. A comment word causes program text to be read in and discarded, until a specific condition is encountered in the program stream, as described below.
     </p>
-
-    <p>
-        Recognizers expand this mechanism to allow for the recognition of things other than integers, like floating point numbers, symbols, dates, measurements, and so forth. Basically any value that can be represented as a single text token can have a recognizer. In our system, at least, words even have a recognizer. The word recognizer is run last, and if it finds that the token matches a FORTH dictionary word, handles it. If no recognizer is invoked for a token, it is a program error.
-    </p>
-
-    <p>
-        FORTH is a word-oriented language, which at the program text level is essentially what we think of as a "word" - continuous letters and numbers without spaces. This "word" is better and less ambiquosly referred to as a "token". FORTH is different than byte-oriented programming languages, in which any character in the text can control the program.
-    </p>
-
-    <p>
-        The word/token-oriented nature of FORTH does lead to awkwardness in the case of data or program structures that span across spaces. (I'm still thinking about this, because it seems somewhat arbitrary.) The impact of this is that we can have recognizers for whole word/tokens, like a number, date, symbol, boolean true/false, null, and of course program "words" (aka functions). But we can't have them for strings, arrays, structures. For these, we need to have special words which themselves parse the program text.
-    </p>
-
-    <p>
-        So we have token recognizers which interpret a token, but we also have parsing words, which take over the job of parsing the program text after they are themselves recognized as a program word and ending when they sense something to end their parsing in the program text. A string starts with the word <code>"</code>, which then starts eating up the program text until it encounters a literal `"` character in the text, at which point it will stop consuming the program text, create a string with what it consumed, and returns to the main parser.
-    </p>
-
-
-    <h3>Built-In Types</h3>
-
-    <p>
-        This FORTH provides several data types beyond just the integer. In fact, the basic type is the number, not integer, as this is what Javascript offers.
-    </p>
-
-    <p>
-        All Symbolic Forth values are stored with their typing intact. This allows us to use polymorphic words when appropriate. For instance, the output word <code>.</code> will print the canonical form of any value provided to it from the Data Stack. However, other types of words like comparisons (equality, less than, etc.) are not polymorphic because the way one compares values of different types are too different. In such cases a generic approach can lead to confusion.
-    </p>
-
-    <dl>
-        <dt>number</dt>
-        <dd>A Javascript number - either integer or decimal form accepted, positive or negative. Examples: <code>123</code>, <code>1.23</code>, <code>0</code>, <code>-456</code></dd>
-
-        <dt>string</dt>
-        <dd>A Javascript string, provided in the classic FORTH style, using the double-quote as a word to start reading a string from the program stream. A string ends with the character <code>"</code>. Examples: <code>" a string"</code> </dd>
-
-        <dt>boolean</dt>
-        <dd>A Javascript boolean, provided as a raw token of either true or false. Examples: <code>true</code>, <code>false</code></dd>
-
-        <dt>symbol</dt>
-        <dd>This type does not have a Javascript equivalent; it is simply stored as a string. A symbol is basically a single-word string value, with the string stored in a separate symbol table. Within FORTH code it is provided by using a <code>'</code> prefix. [If FORTH encounters a token which is not a word, number, or boolean, it is interpreted as a symbol. Examples: <code>foo VAR bar</code>, <code>foo .</code>]</dd>
-
-        <dt>array</dt>
-        <dd>An array is simply a sequence of any number of FORTH values. We
-        do not currently support words in an array. Arrays may be created,
-        any member accessed, and any member set. We may also get the length
-        of an array.</dd>
-
-    </dl>
-
-    <h3>User-Defined Types</h3>
-
-    <blockquote>TODO</blockquote>
-
-    <h3>Vocabularies</h3>
-
-    <p>Many FORTHs support a "vocabulary" feature. A vocabulary is essentially a namespace (a term used in many programming languages) - a separate storage structure in which words and data may be stored.</p>
-
-    <p>Each vocabulary has a name, such as <code>string</code>, used to prefix words available in the vocabulary. For instance <code>string::compare</code> is a word in the string vocabulary which allows one to obtain a string ordering comparison (as implemented in javascript's localeCompare method). Since this word is not relevant to any other data type, it is available only in the string vocabulary.</p>
-
-    <p>In fact, this is one of the primary uses of vocbularies - the make type-specific words available in a separate namespace.</p>
-
-    <p>Standard(ish) FORTH words are available in the empty vocbulary, which may be accssed without any prefix (or with <code>::</code> if you like, but that is a bit silly.)</p>
-
-    <h3>Modes</h3>
-
-    <blockquote>TODO</blockquote>
-
-    <h3>Some Batteries Included</h3>
-
-    <blockquote>TODO</blockquote>
-
-    <h3>DOM Integration</h3>
-
-    <blockquote>TODO</blockquote>
-
-    <h2>Compliation and Interpretation</h2>
-
-    <blockquote>TODO</blockquote>
-
-    <h2>Errors</h2>
-
-    <blockquote>TODO</blockquote>
-
-    <h2>Core Words</h2>
-
-    <h3>Comments</h3>
 
     <table class="word-list">
         <thead>
@@ -162,25 +64,37 @@
                     Meaning
                 </th>
                 <th>
-                    Compile-time?
+                    Parsing?
                 </th>
                 <th>
                     Run-time?
                 </th>
-                <th>
-                    DS used
+                <th colspan="2">
+                    PS
                 </th>
-                <th>
-                    DS left
-                </th>
-                <th>
-                    RS used
-                </th>
-                <th>
-                     RS left
+                <th colspan="2">
+                    RS
                 </th>
                 <th>
                     Notes
+                </th>
+            </tr>
+            <tr>
+                <th colspan="4">
+                </th>
+                <th>
+                    used
+                </th>
+                <th>
+                    left
+                </th>
+                <th>
+                    used
+                </th>
+                <th>
+                    left
+                </th>
+                <th>
                 </th>
             </tr>
         </thead>
@@ -203,37 +117,17 @@
                 <td>
                 </td>
                 <td>
+                </td>
+                <td>
+                </td>
+                <td>
                     Continues reading program and discarding input until the ) character is encountered
                 </td>
             </tr>
+
             <tr>
                 <td>
-                   \\
-                </td>
-                <td>
-                    Line comment start
-                </td>
-                <td>
-                    Yes
-                </td>
-                <td>
-                    No
-                </td>
-                <td>
-                </td>
-                <td>
-                </td>
-                <td>
-                </td>
-                <td>
-                </td>
-                <td>
-                    Continues reading and discarding program input until an end of line character is encountered.
-                </td>
-            </tr>
-            <tr>
-                <td>
-                  //
+                  /
                 </td>
                 <td>
                     Line comment start
@@ -269,14 +163,14 @@
         1 1 + .
     </div>-->
 
-    <h3>Data Stack Words</h3>
+    <h3 id="parameter-stack">Parameter Stack Words</h3>
 
     <p>
-        Words for manipulating or finding out about the status of the data stack. The data stack is abbreviated to <code>DS</code>.
+        Words for manipulating or finding out about the status of the parameter stack. The parameter stack is abbreviated to <code>PS</code>.
     </p>
 
     <p>
-        Note that the <i>Data Stack</i> is also referred to in FORTH systems as the <i>Parameter Stack</i>, as it normal method for a word to receive parameters. At the same time, a word "returns" data by placing it onto the same stack. So, a more general term for this stack seems to be Data Stack.
+        Note that the <i>Parameter Stack</i> is also referred to in some FORTH systems as the <i>Data Stack</i>. Although that PS does contain data, I prefer to keep the name that ties its functionality to its primary usage, which is to place parameters for words to consume, and for words to produce values for the rest of the program.
     </p>
 
     <table class="word-list">
@@ -289,25 +183,37 @@
                     Meaning
                 </th>
                 <th>
-                    Compile-time?
+                    Parsing?
                 </th>
                 <th>
                     Run-time?
                 </th>
-                <th>
-                    DS used
+                <th colspan="2">
+                    PS
                 </th>
-                <th>
-                    DS left
-                </th>
-                <th>
-                    RS used
-                </th>
-                <th>
-                     RS left
+                <th colspan="2">
+                    RS
                 </th>
                 <th>
                     Notes
+                </th>
+            </tr>
+            <tr>
+                <th colspan="4">
+                </th>
+                <th>
+                    used
+                </th>
+                <th>
+                    left
+                </th>
+                <th>
+                    used
+                </th>
+                <th>
+                    left
+                </th>
+                <th>
                 </th>
             </tr>
         </thead>
@@ -390,10 +296,37 @@
                 <td>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    SWAP
+                </td>
+                <td>
+                    Place the second stack item, if any, on the top of the stack, resulting in the previously top stack item being in the second position.
+                </td>
+                <td>
+                    No
+                </td>
+                <td>
+                    Yes
+                </td>
+                <td>
+                *
+                </td>
+                <td>
+                *
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                <td>
+                    Although the shape of the PS does not change, it does modify it. Don't know how to express that in terms of "PS popped" and "PS pushed"
+                </td>
+            </tr>
         </tbody>
     </table>
 
-    <h3>Return Stack Words</h3>
+    <h3 id="return-stack">Return Stack Words</h3>
     <p>
         Words for manipulating or finding out about the status of the return stack. The data stack is abbreviated to <code>RS</code>.
     </p>
@@ -579,9 +512,7 @@
         </tbody>
     </table>
 
-
-
-    <h3>Numeric Comparison</h3>
+    <h3 id="numeric-comparisons">Numeric Comparison</h3>
 
     <p>
         <code>FORTH</code> generally frowns upon words supporting more than one type - in other words, we don't often have polymorphic words. This may make <code>FORTH</code> a bit too literal for some, but it ensures that words have just one meaning, which makes reading and debugging code that much easier.
@@ -818,7 +749,7 @@
         You may have noticed that we can probably do away with !=, &gt;=, and &lt;=, as these may be implemented by combining words. However, these are such common concepts they deserve their own words; it makes code more pleasant to read.
     </blockquote>
 
-    <h3>Variables and Constants</h3>
+    <h3 id="variables">Variables and Constants</h3>
 
     <p>
         While FORTH is oriented around stacks, and is at its core can be programmed only with stacks, it is rather convenient to be able to store values with an associated name for future and repeated reuse.
@@ -1017,7 +948,17 @@
         </tbody>
     </table>
 
-    <h3>Locals</h3>
+    <h3 id="constants">Constants</h3>
+
+    <p>
+        While FORTH is oriented around stacks, and is at its core can be programmed only with stacks, it is rather convenient to be able to store values with an associated name for future and repeated reuse.
+    </p>
+
+    <p>
+        Constants and Variables work very similarly, but contstants may not be set more than once.
+    </p>
+
+    <h3 id="locals">Locals</h3>
 
     <p>
         Local variables are useful in words of more state. Of course, we should

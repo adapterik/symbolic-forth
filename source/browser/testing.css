@@ -1,4 +1,4 @@
-@import "/common.css";
+@import "./common.css";
 
 #testing {
     flex: 1 1 0;

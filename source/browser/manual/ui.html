@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>UI | Manual | Symbolic FORTH</title>
+    <link rel="stylesheet" href="index.css">
+    <meta charset="utf-8">
+</head>
+<body class="manual-page">
+
+<div id="header">
+    <div id="title">
+        Manual
+    </div>
+    <div id="menu">
+        <a href="index.html">Intro</a>
+        <a href="types.html" class="selected">Types</a>
+        <a href="vocabularies/index.html">Vocabularies</a>
+        <a href="ui.html">UI</a>
+        <a href="../index.html" style="margin-left: 3rem;">Back Home</a>
+    </div>
+    <div id="alert"></div>
+</div>
+
+<div id="content" class="content">
+    <h1>UI</h1>
+
+    <p>
+        A focus of Symbolic FORTH is to provide both basic and sophisticated user interfaces and a user interface toolkit for building bespoke user interfaces.
+    </p>
+
+    <p>
+     The basic user interface consists of an output area, a console area, and an input area.
+    </p>
+
+    <p>
+    The output area is where any ordinary "print" statements are displayed, as well as normal program feedback. Abnormal program feedback is displayed in the console area. User input is provided in an input area.
+    </p>
+
+    <p>
+        This is very simple, perhaps overly so. It is also important that this is currently just a basic starting point. One can easily imagine a classic REPL which combines all three i/o needs.
+    </p>
+
+    <h2>Future Work</h2>
+
+    <h3>REPL</h3>
+
+    <p>
+        A "Read Eval Print Loop", or REPL, is the classic, traditional basic interface to an interpreted programming language. Perl has it, Ruby, Python, Javascript.
+    </p>
+    <p>
+        It sure would be nice to have FORTH-style REPL. In
+    </p>
+
+    <h3>FORTH Editor</h3>
+
+    <p>
+        Although any editor can be used for FORTH code, the programming support for editors does not suit FORTH programming adequately. For instance, as words, variables, constants, and other runtime resources are defined, they should be recognized by the editor from that point forward, though not previously.
+    </p>
+
+    <p>
+        It would also be nice to be able to simply select code and execute it.
+    </p>
+
+    <h3>IDE</h3>
+
+    <p>
+        The <a href="../programming.html">programming tool</a> is the playground for a FORTH IDE. FORTH, due to the simple and understandable virtual machine, is very suitable to an IDE that exposes the internal data, such as words, variables, contstants, arrays, objects, and the like.
+    </p>
+
+</div>
+
+</body>
+
+</html>

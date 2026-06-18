@@ -95,19 +95,11 @@ function array_get_word({forth}) {
 **/
 function array_set_word({forth}) {
     return () => {
+        const array = forth.pop_array();
+        const index = forth.pop_number();
+        const itemToSet = forth.pop_any();
 
-        const {type: array_type, value: array_value} = forth.parameter_stack.pop();
-
-        const {type: index_type, value: index_value} = forth.parameter_stack.pop();
-        //TODO check the types
-
-        // const array_id = forth.strings.get(array_id_id.value);
-        // const array_id = forth.parameter_stack.pop();
-        const itemToSet = forth.parameter_stack.pop();
-
-        // const array_object = forth.objects.get(array_id);
-
-        array_value[index_value] = itemToSet;
+        array[index] = itemToSet;
     }
 }
 
@@ -123,25 +115,46 @@ function array_set_word({forth}) {
  */
 function narray_word({forth}) {
     return () => {
-        const array_size = forth.parameter_stack.pop();
+        const array_size = forth.pop_number();
         const array_value = [];
-        for (let i = 0; i < array_size.value; i += 1) {
-            array_value.push(forth.parameter_stack.pop());
+        if (array_size > 0) {
+            for (let i = 0; i < array_size; i += 1) {
+                const value = forth.pop_any();
+                array_value.push(value);
+            }
         }
 
         forth.parameter_stack.push(forth.array_value(array_value));
     }
 }
+function ncreate_word({forth}) {
+    return () => {
+        const array_size = forth.pop_number();
+        const array_value = [];
+        if (array_size > 0) {
+            const value = forth.pop_any();
+            for (let i = 0; i < array_size; i += 1) {
+                array_value.push(value);
+            }
+        }
 
+        forth.parameter_stack.push(forth.array_value(array_value));
+    }
+}
+function empty_word({forth}) {
+    return () => {
+        forth.parameter_stack.push(forth.array_value([]));
+    }
+}
 function array_word({forth}) {
     return () => {
         const array_value = [];
         for (;;) {
-           const {type, value} = forth.parameter_stack.pop();
+           const [type, value] = forth.pop_any();
            if (type === 'symbol' && value === 'end') {
                break;
            }
-           array_value.push({type, value});
+           array_value.push([type, value]);
             // array_value.push(forth.parameter_stack.pop());
         }
 
@@ -149,60 +162,59 @@ function array_word({forth}) {
     }
 }
 
-
-// function set_word({forth}) {
-//     return () => {
-//         const value = forth.parameter_stack.pop();
-//         // const array_id = forth.parameter_stack.pop();
-//         const array_id_id = forth.parameter_stack.pop();
-//         const array_id = forth.strings.get(array_id_id.value);
-//         const element_i = forth.parameter_stack.pop();
-//
-//
-//         const array_object = forth.objects.get(array_id);
-//         array_object.value.items[element_i.value] = value;
-//     }
-// }
-/*
-function get_word({forth}) {
-    return () => {
-        const array_id_id = forth.parameter_stack.pop();
-        const array_id = forth.strings.get(array_id_id.value);
-        const element_i = forth.parameter_stack.pop();
-
-        const array_object = forth.objects.get(array_id);
-        const value = array_object.value.items[element_i.value];
-        forth.parameter_stack.push(value);
-    }
-}*/
-
 function length_word({forth}) {
     return () => {
-        const {type: array_type, value: array_value} = forth.parameter_stack.pop();
-        // const array_id_id = forth.parameter_stack.pop();
-        // const array_id = forth.strings.get(array_id_id.value);
-        // const array_object = forth.objects.get(array_id);
-        const length = array_value.length;
-        forth.parameter_stack.push(forth.number_value(length));
+        const array = forth.pop_array();
+        forth.parameter_stack.push(forth.number_value(array.length));
     }
 }
 
 function array_reverse_word({forth}) {
     return () => {
-        const {type: array_type, value: array_value} = forth.parameter_stack.pop();
+        const array = forth.pop_array();
 
-        const reversed = array_value.toReversed();
-        forth.parameter_stack.push(forth.array_value(reversed));
+        forth.parameter_stack.push(forth.array_value(array.toReversed()));
     }
 }
 
 function array_append_word({forth}) {
     return () => {
-        const {type: array_type, value: array_value} = forth.parameter_stack.pop();
+        const array = forth.pop_array();
 
-        const valueToAppend = forth.parameter_stack.pop();
+        const valueToAppend = forth.pop_any();
 
-        array_value.push(valueToAppend);
+        array.push(valueToAppend);
+    }
+}
+
+function array_prepend_word({forth}) {
+    return () => {
+        const array = forth.pop_array();
+
+        const valueToAppend = forth.pop_any();
+
+        array.unshift(valueToAppend);
+    }
+}
+
+function array_concat_word({forth}) {
+    return () => {
+        const array = forth.pop_array();
+
+        const toAppend = forth.pop_array();
+
+        forth.parameter_stack.push(forth.array_value(array.concat(toAppend)));
+    }
+}
+
+function array_extend_word({forth}) {
+    return () => {
+        const array = forth.pop_array();
+        const toAppend = forth.pop_array();
+
+        for (const item of toAppend) {
+            array.push(item);
+        }
     }
 }
 
@@ -211,10 +223,12 @@ const ArrayVocabulary = (forth, options = {}) => {
     forth.add_word('', 'a[', array_brace_word);
     forth.add_word('', 'a@', array_get_word);
     forth.add_word('', 'a!', array_set_word);
-
-    forth.add_word('array', 'narray', narray_word);
     forth.add_word('', 'array', array_word);
-    forth.add_word('array', 'ncreate', narray_word);
+
+    forth.add_vocabulary('ARRAY', 'Extended array functionality');
+    forth.add_word('array', 'narray', narray_word);
+    forth.add_word('array', 'ncreate', ncreate_word);
+    forth.add_word('array', 'empty', empty_word);
     forth.add_word('array', 'create', array_word);
     forth.add_word('array', '!', array_set_word);
     forth.add_word('array', 'set', array_set_word);
@@ -223,6 +237,9 @@ const ArrayVocabulary = (forth, options = {}) => {
     forth.add_word('array', 'length', length_word);
     forth.add_word('array', 'reverse', array_reverse_word);
     forth.add_word('array', 'append', array_append_word);
+    forth.add_word('array', 'prepend', array_prepend_word);
+    forth.add_word('array', 'concat', array_concat_word);
+    forth.add_word('array', 'extend', array_extend_word);
 }
 
 export default ArrayVocabulary;

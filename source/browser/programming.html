@@ -2,10 +2,15 @@
 <html lang="en">
 <head>
 <title>Programming | Symbolic FORTH</title>
-<link rel="stylesheet" href="/programming.css">
+<link rel="stylesheet" href="programming.css">
     <meta charset="utf-8">
+<style>
+body {
+  display: none;
+}
+</style>
 </head>
-<body>
+<body class="sforth">
 
 <div id="header">
   <div id="title">
@@ -16,7 +21,7 @@
      <a href="testing.html">Testing</a>
      <a href="programming.html" class="selected">Programming</a>
      <a href="applications.html">Applications</a>
-     <a href="manual.html">Manual</a>
+     <a href="manual/index.html">Manual</a>
      <a href="about.html">About</a>
   </div>
   <div id="alert"></div>
@@ -70,6 +75,7 @@
               <div class="cell">Vocab</div>
               <div class="cell">Name</div>
               <div class="cell">Type</div>
+              <div class="cell">Value</div>
             </div>
           </div>
           <div class="body">
@@ -166,9 +172,24 @@
 </div>
 
 <div id="feedback" class="feedback">
+  <div class="output-area">
+    <div class="title-area">
+      <div class="left-gadgets"></div>
+      <div class="title">Test Output</div>
+      <div class="right-gadgets"></div>
+    </div>
     <div id="output" class="output"></div>
+  </div>
+  <div class="console-area">
+    <div class="title-area">
+      <div class="left-gadgets"></div>
+      <div class="title">Console Output</div>
+      <div class="right-gadgets"></div>
+    </div>
     <div id="console" class="console"></div>
+  </div>
 </div>
+
 
 
 <div id="input" class="input">

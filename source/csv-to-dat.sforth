@@ -17,6 +17,7 @@
 
 ( Constants )
 
+" CHAR" " Characters" VOCABULARY
 32 CONST char::space
 34 CONST char::double-quote
 44 CONST char::comma
@@ -25,12 +26,13 @@
 
 ( Processing words )
 
+
 : read-quoted-field ( file-handle/fd -- gathered-text/string|null status/symbol)
   LOCAL file-handle
   0 ARRAY::NCREATE LOCAL strings
 
   ( TODO: handle embedded double quotes )
-  { A[ CHAR::DOUBLE-QUOTE ] LOCAL@ file-handle } FILE::GET-UNTIL-CODE
+  { A[ CHAR::DOUBLE-QUOTE ] LOCAL@ file-handle } FILE::READ-UNTIL-CODE
   CHAR::EOF = IF
     DROP
     ( TODO: we need to throw an exception here, I think )
@@ -38,139 +40,166 @@
   THEN
 
   ( now we need to get up to the comma )
-  { A[ CHAR::COMMA CHAR::EOL ] LOCAL@ file-handle } FILE::GET-UNTIL-CODE
+  { A[ CHAR::COMMA CHAR::EOL ] LOCAL@ file-handle } FILE::READ-UNTIL-CODE
 
   ( we don't need the result, so get rid of it )
   SWAP DROP
 
   DUP CHAR::EOF = IF
     DROP
-    ~EOF
+   SYM EOF
   ELSE
     CHAR::EOL = IF
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
   SWAP
+;
+
+
+: read-quoted-field2 ( file-handle/fd -- gathered-text/string|null)
+  L:> file-handle
+
+  ( for gattering the list of strings )
+  ARRAY::EMPTY L:> strings
+
+  BEGIN
+    A[ CHAR::DOUBLE-QUOTE ]  L@ file-handle FILE::READ-UNTIL-CODE
+
+    COND
+      CHAR::EOF = OF
+          " ERROR: Quoted field ended prematurely" PRINTLN
+          EXIT
+        END
+      CHAR::DOUBLE-QUOTE = OF
+          \ save the string gathered so far
+          L@ strings ARRAY::APPEND
+
+          \ need to poke to see if we have a doubled double quote
+          L@ file-handle FILE::READ-BYTE
+
+          COND
+            IS-NULL OF RETURN END
+            CHAR::DOUBLE-QUOTE = OF CONTINUE END
+            DROP true OF L@ file-handle FILE::PUSH-BACK BREAK END
+          END
+        END
+      DROP true OF
+          L@ strings ARRAY::APPEND
+          BREAK
+        END
+    END
+  REPEAT
+
+  \ if we are here, we have the quoted string, with embedded quotes
+  \ removed.
+  \ Now we need to look for the next comma, or end of line or file.
+  A[ CHAR::COMMA CHAR::EOL ] L@ file-handle FILE::READ-UNTIL-CODE
+
+  ( we don't need the result, so get rid of it; we just want the
+    reason for stopping )
+  SWAP DROP
+
+  COND
+    CHAR::EOF = OF ( nothing to do ) END
+    CHAR::EOL = OF L@ file-handle FILE::PUSH-BACK  END
+    DROP true OF ( naught to do ) END
+  END
+
+  L@ strings STRING::JOIN-ARRAY
 ;
 
 ( ---------------------------------------- )
 ( Read the text up to the next comma       )
 ( ---------------------------------------- )
-: read-raw-field ( file-handle -- field:string line-status:symbol field:string )
-  LOCAL file-handle
+\  : read-raw-fieldx ( file-handle/number -- field/string )
+\    \ is it really worth all the stack business just to get rid of one local?
+\    DUP
+\    A[ CHAR::COMMA CHAR::EOL ] SWAP FILE::READ-UNTIL-CODE
+\    COND
+\      CHAR::EOF =   OF SWAP DROP ( anything to do? )  END
+\      CHAR::EOL =   OF SWAP FILE::PUSH-BACK END
+\      CHAR::COMMA = OF SWAP DROP ( nothing to do ) END
+\      DROP true     OF SWAP DROP ( nothing to do, other than report error ...) END
+\    END
+\  ;
 
-\    A[ 32 9 10 ] LOCAL@ file-handle FILE::GET-WHILE-CODE DROP
-
-  { A[ CHAR::COMMA CHAR::EOL ] LOCAL@ file-handle } FILE::GET-UNTIL-CODE
-
-  DUP CHAR::EOF = IF
-    ( end of file )
-    DROP ( the matching char code )
-    ~EOF
-  ELSE
-    CHAR::EOL = IF
-      ~EOL
-    ELSE
-      ~OK
-    THEN
-  THEN
-  SWAP
+( ---------------------------------------- )
+( Read the text up to the next comma       )
+( ---------------------------------------- )
+: read-raw-field ( file-handle/number -- field/string )
+  L:> file-handle
+  A[ CHAR::COMMA CHAR::EOL ] L@ file-handle FILE::READ-UNTIL-CODE
+  COND
+    CHAR::EOF =   OF ( nothing to do )  END
+    CHAR::EOL =   OF L@ file-handle FILE::PUSH-BACK END
+    CHAR::COMMA = OF ( nothing to do ) END
+    DROP true     OF ( nothing to do, other than report error ...) END
+  END
 ;
 
 : convert-field ( field-value/string type/symbol -- value/any )
  COND
-   ~string EQ OF ( do nothing, just keep string ) END
-   ~number EQ OF STRING::TO-NUM END
-   ~date EQ OF " -" SWAP STRING::SPLIT END
+   SYM string EQ OF ( do nothing, just keep string ) END
+   SYM int EQ OF TO-INT END
+   SYM number EQ OF STRING::TO-NUM END
+   SYM date EQ OF " -" SWAP STRING::SPLIT END
  END
 ;
 
-0 VARIABLE field-count
-
-: read-field ( file-handle/fd -- field/string )
-  L:> file-handle
-
-  BEGIN
-    L@ file-handle FILE::GET-CHAR
-
-    ( end of file )
-    DUP TYPEOF " null" S= IF BREAK THEN
-
-    ( end of line )
-    DUP CHAR::EOL = IF DROP BREAK THEN
-
-    DUP
-    COND
-      CHAR::DOUBLE-QUOTE =
-    END
-  REPEAT
+: grok-field-type ( data/string -- type/string )
+  COND
+    TO-NUMBER NOT IS-NULL OF " number" END
+    TO-DATE NOT IS-NULL OF " date" END
+    DROP TRUE OF " string" END
+  END
 ;
+
+\  : grok-row-types ( data-row/array -- types/array )
+\    ARRAY::EMPTY L:> types
+\    DUP ARRAY::LENGTH 0 DOI
+\      DUP L@ I SWAP A@ grok-field-type L@@ types ARRAY::APPEND
+\    LOOP
+\    DROP
+\    L@ types
+\  ;
+
+0 VARIABLE field-count
 
 : read-row ( types/array file-handle/fd -- row/array )
     L:> file-handle
     L:> types
 
     0 ARRAY::NARRAY L:> row
-    -1 L:> colno
+    0 L:> colno
 
     BEGIN
-      L@ file-handle FILE::GET-CHAR
-
-      ( end of file )
-      DUP TYPEOF " null" S= IF BREAK THEN
-
-      ( end of line )
-      DUP CHAR::EOL = IF DROP BREAK THEN
+      L@ file-handle FILE::READ-BYTE
 
       ( find the first char of the field to determine what to do next )
-      DUP
       COND
-        CHAR::DOUBLE-QUOTE =
-           OF
-            DROP \ get rid of the character
-            L@ file-handle read-quoted-field
-          END
-        CHAR::COMMA =
-          OF
-            ( this can happen with an empty - not even a space - field )
-            ( we create an empty string field )
-            DROP \ get rid of the character
-            ~OK " "
-          END
-        CHAR::EOL =
-          OF DROP CONTINUE END
-        CHAR::SPACE =
-          OF DROP CONTINUE END
-        DROP true
-          OF
-            \ Otherwise, collect until the next comma or end of line
-            L@ file-handle read-raw-field
-            \ we have to fuss with the stack to get things in the right
-            \ order
-            2 NPICK SWAP STRING::CONCAT
-          END
+        TYPEOF " null" S=    OF BREAK END
+        CHAR::DOUBLE-QUOTE = OF L@ file-handle read-quoted-field2 END
+        CHAR::COMMA =        OF " " END
+        CHAR::EOF =          OF BREAK END
+        CHAR::EOL =          OF BREAK END
+        CHAR::SPACE =        OF CONTINUE END
+        DROP true            OF L@ file-handle FILE::PUSH-BACK
+                                L@ file-handle read-raw-field
+                             END
       END
 
-      L+! colno
       \ note that if the types parameter is falsey, we don't attempt to convert
       \ the field and just leave it as a string.
-      L@ types IF
-        L@ colno L@ types ARRAY::GET convert-field
-      THEN
+
+      L@ types IF L@ colno L@ types A@ convert-field THEN
 
       \ append to the row
       L@ row ARRAY::APPEND
 
-      \ handle line state, which is still on the stack
-      COND
-        ~EOF EQ OF BREAK END
-        ~EOL EQ OF BREAK END
-        DROP true OF END
-      END
-
+      L+> colno
     REPEAT
 
     L@ row
@@ -179,18 +208,39 @@
 : row-to-dat ( csv-row/array -- dat-row/array )
   L:> row
 
-  0 ARRAY::NARRAY L:> dat
+  ARRAY::EMPTY L:> dat
+  0 L:> index
+  L@ row ARRAY::LENGTH L:> row-length
 
-  L@ row ARRAY::LENGTH 0 DOI
-    \ remember, the index element is on top of stack :)
-    \ or is it a local named "I"?
-    L@ I L@ row A@ DUP STRING::LENGTH TO-STRING L@ dat ARRAY::APPEND
-    L@ dat ARRAY::APPEND
-  LOOP
+  BEGIN
+    L@ index L@ row-length = IF BREAK THEN
+
+    L@ index L@ row A@ TO-STRING
+    DUP STRING::LENGTH TO-STRING L@ dat ARRAY::APPEND \ the field length
+                                 L@ dat ARRAY::APPEND  \ the field
+
+    L+> index
+  REPEAT
 
   L@ dat "  " STRING::INTERPOLATE-ARRAY "  " STRING::CONCAT
 ;
 
+: row-to-datx ( csv-row/array -- dat-row/array )
+  ARRAY::EMPTY L:> dat
+
+  DUP ARRAY::LENGTH 0 DOINDEX
+    \ the loop index is on top of stack
+    \ get the value
+    SWAP A@ TO-STRING
+    DUP STRING::LENGTH TO-STRING L@ dat ARRAY::APPEND \ the field length
+                                 L@ dat ARRAY::APPEND  \ the field
+    DUP \ keep the array copy on top of stack
+  LOOP
+
+  DROP \ the array
+
+  L@ dat "  " STRING::INTERPOLATE-ARRAY "  " STRING::CONCAT
+;
 \  : print-dat ( dat-row/array -- )
 \    DUP L:> row
 \    ARRAY::LENGTH 0 DOI
@@ -208,49 +258,119 @@
 \    L@ result " " STRING::JOIN-ARRAY
 \  ;
 
-: main
-  L:> input-file-name
+(
+  Main logic for the CSV-to-DAT conversion.
+
+  Given an input file name, as supplied on the command line,
+  produce a DAT formatted header file and data file. These files
+  are named after the input file, with .header.dat and .dat appended,
+  and placed in the same directory.
+)
+
+: get-types ( base-file-name/string -- types/array )
+  # SWAP " .header.csv" STRING::JOIN L:> header-file-name
+
+  FILE::RDONLY L@ header-file-name FILE::OPEN L:> header-fd
+
+  W[ L@ header-fd FILE::CLOSE DROP ] DEFER
+
+  false L@ header-fd read-row  DROP \ and don't use
+  false L@ header-fd read-row
+;
+
+: main ( base-file-name/string -- )
+  \ yes, we could use the stack item, but as we'll see, there is much usage
+  \ of this base file name. And yes we could do it all here, but it is also
+  \ pretty hard to follow because it requires a lot of dup and swap.
+  L:> base-file-name
+
+  " Input file base name: " print L@ base-file-name println
+
+  # L@ base-file-name " .csv" STRING::JOIN L:> input-file-name
+
+\    " Data input file name: " PRINT L@ input-file-name PRINTLN
+\    " Header input file name: " PRINT L@ input-header-file-name PRINTLN
+
+  L@ base-file-name get-types L:> column-types
+
+\    " column types:" println L@ column-types println
 
   FILE::RDONLY L@ input-file-name FILE::OPEN L:> input-fd
+  W[ L@ input-fd FILE::CLOSE DROP ] DEFER
 
-  \ we need one file to write the header
-  # L@ input-file-name " .header.dat" STRING::JOIN L:> header-file-name
+  \ TODO: left off here - we need to open the CSV header file - which we must
+  \ create by hand, and fail if not found.
+  \ This header file most importantly provides the types, and if necessary,
+  \ short scripts to convert column values, which may refer to words defined
+  \ in this file to assist in conversion (as longer scripts may be required to
+  \ handle multiple cases of conversion for one field.)
+
+  \ given the input file name...
+  \ split it into name and extension
+
+  \    " /" L@ input-file-name STRING::SPLIT ARRAY::REVERSE 0 SWAP A@
+  \  " ." SWAP STRING::SPLIT L:>[ base-name extension ]
+
+\    " ." L@ input-file-name STRING::SPLIT ARRAY::REVERSE L:> parts
+
+  \ create a new filename with base name + .header + extension
+  \ in other words if foo.csv is input file, foo.header.csv is the header file
+\    # L@ base-name " .header." L@ extension STRING::JOIN L:> header-input-file-name
+
+
+  false L@ input-fd read-row L:> header-row
+
+  L@ header-row ARRAY::LENGTH L:> column-count
+
+  \ prepend the column count!
+  L@ column-count TO-STRING L@ header-row ARRAY::PREPEND
+  L@ column-types L@ header-row ARRAY::EXTEND
+
+  # L@ base-file-name " .header.dat" STRING::JOIN L:> header-file-name
+
+  " Writing header to: " PRINT L@ header-file-name PRINTLN
 
   FILE::WRONLY FILE::TRUNC | FILE::CREAT | L@ header-file-name FILE::OPEN L:> header-fd
+  W[ L@ header-fd FILE::CLOSE DROP ] DEFER
 
-  false L@ input-fd read-row row-to-dat L@ header-fd FILE::WRITE-STRING
+  # L@ base-file-name " .data.dat" STRING::JOIN L:> data-file-name
 
-  L@ header-fd FILE::CLOSE
-
-  false L:> row-types
-
-  0 L:> line-count
-  null L:> row
-
-  # L@ input-file-name " .data.dat" STRING::JOIN L:> data-file-name
+  " Writing data to: " PRINT L@ data-file-name PRINTLN
 
   FILE::WRONLY FILE::TRUNC | FILE::CREAT | FILE::APPEND | L@ data-file-name FILE::OPEN L:> data-fd
+  W[ L@ data-fd FILE::CLOSE DROP ] DEFER
+
+  null L:> row
+  0 L:> row-count
 
   BEGIN
-    L@ row-types L@ input-fd read-row
+\      " ROW: " print L@ row-count PRINTLN
+    L@ column-types L@ input-fd read-row
 
     DUP ARRAY::LENGTH 0 = IF
-      " Rows: " PRINT L@ line-count PRINTLN
       BREAK
     THEN
 
     row-to-dat L@ data-fd FILE::WRITE-STRING
 
+    L+> row-count
 
-    L+! line-count
+    \ Enable the line below to force a quick conversion for testing.
+      L@ row-count 100 = IF BREAK THEN
   REPEAT
 
-  L@ data-fd file::close
 
-  L@ input-fd file::close
 
-  " " PRINTLN
+\    L@ column-count 0 DO
+\       " string" L@ header-row ARRAY::APPEND
+\    LOOP
 
+
+  L@ header-row row-to-dat L@ header-fd FILE::WRITE-STRING
+
+  " Completed" PRINTLN
 ;
 
 main
+
+.S

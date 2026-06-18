@@ -100,7 +100,7 @@ null VAR line-context
 
 : header1
 
-~header1 line-context !
+SYM eader1 line-context !
 
 " <h1>" PRINT
 

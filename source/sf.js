@@ -4,6 +4,7 @@
  **/
 import * as F from "./lang/forth-qjs.js";
 import CoreVocabulary from "./lang/vocabulary_core.js";
+import SymbolVocabulary from "./lang/vocabulary_symbol.js";
 import IOVocabulary from "./lang/vocabulary_io.js";
 import MathVocabulary from "./lang/vocabulary_math.js";
 import TimeVocabulary from "./lang/vocabulary_time.js";

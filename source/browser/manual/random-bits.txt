@@ -1,0 +1,45 @@
+
+    <h2>Types</h2>
+
+    <p>
+        FORTH does not traditionally have any sense of types in the modern sense. Or rather, should we say, it is based on the fundametal type being the natural word size of the computer it is running on. There is essentially no type checking. More complex types like doubles, strings, arrays, and so forth do exist, but are typically created and used with bespoke "words" (like functions).
+    </p>
+
+    <p>
+        This FORTH is based on browser Javascript so it has some basic types available underneath, and I've chosen to expose these to the language. This allows Symbolic FORTH to be more easily used to program directly against the browser DOM. Yes, it might be fun one day to fork this FORTH and limit it to a more basic type and build from there, but not yet, perhaps never.
+    </p>
+
+    <h3>Built-In Types</h3>
+
+    <p>
+        This FORTH provides several data types beyond just the integer. In fact, the basic type is the number, not integer, as this is what Javascript offers.
+    </p>
+
+    <p>
+        All Symbolic Forth values are stored with their typing intact. This allows us to use polymorphic words when appropriate. For instance, the output word <code>.</code> will print the canonical form of any value provided to it from the Data Stack. However, other types of words like comparisons (equality, less than, etc.) are not polymorphic because the way one compares values of different types are too different. In such cases a generic approach can lead to confusion.
+    </p>
+
+    <dl>
+        <dt>number</dt>
+        <dd>A Javascript number - either integer or decimal form accepted, positive or negative. Examples: <code>123</code>, <code>1.23</code>, <code>0</code>, <code>-456</code></dd>
+
+        <dt>string</dt>
+        <dd>A Javascript string, provided in the classic FORTH style, using the double-quote as a word to start reading a string from the program stream. A string ends with the character <code>"</code>. Examples: <code>" a string"</code> </dd>
+
+        <dt>boolean</dt>
+        <dd>A Javascript boolean, provided as a raw token of either true or false. Examples: <code>true</code>, <code>false</code></dd>
+
+        <dt>symbol</dt>
+        <dd>This type does not have a Javascript equivalent; it is simply stored as a string. A symbol is basically a single-word string value, with the string stored in a separate symbol table. Within FORTH code it is provided by using a <code>'</code> prefix. [If FORTH encounters a token which is not a word, number, or boolean, it is interpreted as a symbol. Examples: <code>foo VAR bar</code>, <code>foo .</code>]</dd>
+
+        <dt>array</dt>
+        <dd>An array is simply a sequence of any number of FORTH values. We
+        do not currently support words in an array. Arrays may be created,
+        any member accessed, and any member set. We may also get the length
+        of an array.</dd>
+
+    </dl>
+
+    <h3>User-Defined Types</h3>
+
+    <blockquote>TODO</blockquote>

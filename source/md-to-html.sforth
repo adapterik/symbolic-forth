@@ -98,7 +98,7 @@ null VARIABLE line-context
 
 : header1
 
-  ~header1 line-context !
+ SYM header1 line-context !
 
   " <h1>" PRINT / this is a comment too...
 
@@ -121,19 +121,19 @@ null VARIABLE mode
 ;
 
 : start-list-mode
-  mode @ ~list
+  mode @SYM list
 ;
 
 : ordered-list-start
-  ~ordered-list mode @ EQ NOT
+ SYM ordered-list mode @ EQ NOT
   IF
     " = <ol>" PRINTLN
-    ~ordered-list mode !
+   SYM ordered-list mode !
   THEN
 ;
 
 : ordered-list-end
-  ~ordered-list mode @ EQ
+ SYM ordered-list mode @ EQ
   IF
     " = </ol>" PRINTLN
     null mode !
@@ -222,7 +222,7 @@ null VARIABLE mode
 
 : begin-numbered-list-mode
   " <OL>" PRINTLN
-  ~numbered-list mode-stack @ stack::push
+ SYM numbered-list mode-stack @ stack::push
 ;
 
 : end-numbered-list-mode
@@ -233,7 +233,7 @@ null VARIABLE mode
 
 : begin-list-mode
   " <UL>" PRINTLN
-  mode-stack @ stack::push ~list
+  mode-stack @ stack::pushSYM list
 ;
 
 : end-list-mode
@@ -251,35 +251,35 @@ null VARIABLE mode
 
     BEGIN
 
-      DUP ~normal EQ IF
+      DUP SYM normal EQ IF
         SWAP
-        DUP " #"    S= IF ~emit-h1-tag BREAK THEN
-        DUP " ##"   S= IF ~emit-h2-tag BREAK THEN
-        DUP " ###"  S= IF ~emit-h3-tag BREAK THEN
-        DUP " ####" S= IF ~emit-h4-tag BREAK THEN
-        DUP " +" S= IF ~emit-p-tag BREAK THEN
-        DUP " @list" S= IF ~begin-list-mode BREAK THEN
-        DUP " @numbered-list" S= IF ~begin-numbered-list-mode BREAK THEN
-        DUP " @end"  S= IF ~end-mode BREAK THEN
+        DUP " #"    S= IF SYM emit-h1-tag BREAK THEN
+        DUP " ##"   S= IF SYM emit-h2-tag BREAK THEN
+        DUP " ###"  S= IF SYM emit-h3-tag BREAK THEN
+        DUP " ####" S= IF SYM emit-h4-tag BREAK THEN
+        DUP " +" S= IF SYM emit-p-tag BREAK THEN
+        DUP " @list" S= IF SYM begin-list-mode BREAK THEN
+        DUP " @numbered-list" S= IFSYM begin-numbered-list-mode BREAK THEN
+        DUP " @end"  S= IF SYM end-mode BREAK THEN
 
         ( default is a paragraph )
         null
 
       ELSE
-        DUP ~list EQ IF
+        DUP SYM list EQ IF
           SWAP
-          DUP " -" S= IF ~emit-li-tag BREAK THEN
-          DUP " *" S= IF ~emit-li-tag  BREAK THEN
-          DUP " @end" S= IF ~end-list-mode BREAK THEN
+          DUP " -" S= IF SYM emit-li-tag BREAK THEN
+          DUP " *" S= IF SYM emit-li-tag  BREAK THEN
+          DUP " @end" S= IF SYM end-list-mode BREAK THEN
         ELSE
-          DUP ~numbered-list EQ IF
+          DUP SYM numbered-list EQ IF
             SWAP
-            DUP " 1." S= IF ~emit-li-tag BREAK THEN
-            DUP " 2." S= IF ~emit-li-tag BREAK THEN
-            DUP " 3." S= IF ~emit-li-tag BREAK THEN
-            DUP " 4." S= IF ~emit-li-tag BREAK THEN
-            DUP " 5." S= IF ~emit-li-tag BREAK THEN
-          DUP " @end" S= IF ~end-numbered-list-mode BREAK THEN
+            DUP " 1." S= IF SYM emit-li-tag BREAK THEN
+            DUP " 2." S= IF SYM emit-li-tag BREAK THEN
+            DUP " 3." S= IF SYM emit-li-tag BREAK THEN
+            DUP " 4." S= IF SYM emit-li-tag BREAK THEN
+            DUP " 5." S= IF SYM emit-li-tag BREAK THEN
+          DUP " @end" S= IF SYM end-numbered-list-mode BREAK THEN
           THEN
         THEN
       THEN
@@ -317,7 +317,7 @@ input-file @ FILE::OPEN VARIABLE file-handle
 
 0 VARIABLE items
 
-~normal mode-stack @ STACK::PUSH
+SYM ormal mode-stack @ STACK::PUSH
 
 BEGIN
   ( get the first word in the file and save it )

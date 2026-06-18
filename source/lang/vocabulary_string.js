@@ -2,27 +2,19 @@
 
 function string_equal_word({forth}) {
     return () => {
-        const {value: string_id_a} = forth.parameter_stack.pop();
-        const {value: string_id_b} = forth.parameter_stack.pop();
+        const string_a = forth.pop_string();
+        const string_b = forth.pop_string();
 
-        const string_a = forth.strings.get(string_id_a);
-        const string_b = forth.strings.get(string_id_b);
-
-        const are_equal = string_a === string_b;
-        forth.parameter_stack.push(forth.bool_value(are_equal));
+        forth.parameter_stack.push(forth.bool_value(string_a === string_b));
     };
 }
 
 function string_compare_word({forth}) {
     return () => {
-        const {value: string_id_a} = forth.parameter_stack.pop();
-        const {value: string_id_b} = forth.parameter_stack.pop();
+        const string_b = forth.pop_string();
+        const string_a = forth.pop_string();
 
-        const string_a = forth.strings.get(string_id_a);
-        const string_b = forth.strings.get(string_id_b);
-
-        const compare_result = string_b.localeCompare(string_a);
-        forth.parameter_stack.push(forth.number_value(compare_result));
+        forth.parameter_stack.push(forth.number_value(string_a.localeCompare(string_b)));
     };
 }
 
@@ -41,8 +33,15 @@ function string_char_code_word({forth}) {
     }
 }
 
+function string_code_char_word({forth}) {
+    return () => {
+        const value = forth.pop_number();
+        forth.parameter_stack.push(forth.string_value(String.fromCharCode(value)));
+    }
+}
+
 function pop_string_or_char(forth) {
-    const {type, value} = forth.parameter_stack.pop();
+    const [type, value] = forth.pop_any();
     switch (type) {
         case 'string': return forth.strings.get(value);
         case 'number': return String.fromCharCode(value);
@@ -56,8 +55,7 @@ function string_concat_word({forth}) {
         const string_b = pop_string_or_char(forth);
         const string_a = pop_string_or_char(forth);
 
-        const concatenated = string_a.concat(string_b);
-        forth.parameter_stack.push(forth.string_value(concatenated));
+        forth.parameter_stack.push(forth.string_value(string_a.concat(string_b)));
     };
 }
 
@@ -76,8 +74,7 @@ function string_interpolate_array_word({forth}) {
         const interpolator = forth.pop_string();
         const interpolatee = forth.pop_array();
 
-        const result = interpolatee.map(({type, value}) => {
-            // TODO: check type ... then coerce or ... throw error?
+        const result = interpolatee.map(([type, value]) => {
             if (type !== 'string') {
                 throw new Error(`Sorry, can only interpolate with strings, not '${type}'`);
             }
@@ -88,17 +85,6 @@ function string_interpolate_array_word({forth}) {
     };
 }
 
-function string_replace_word({forth}) {
-    return () => {
-        const subjectString = forth.pop_string();
-        const toReplace = forth.pop_string();
-        const replacement = forth.pop_string();
-
-        const result = subjectString.replace(toReplace, replacement);
-
-        forth.parameter_stack.push(forth.string_value(result));
-    };
-}
 
 function string_contains_word({forth}) {
     return () => {
@@ -106,7 +92,6 @@ function string_contains_word({forth}) {
         const containsString = forth.pop_string();
 
         const result = subjectString.includes(containsString);
-
         forth.parameter_stack.push(forth.bool_value(result));
     };
 }
@@ -118,7 +103,7 @@ function string_join_word_paired_symbols({forth}) {
         let result = '';
 
         for (;;) {
-            const {type, value} = forth.parameter_stack.pop();
+            const [type, value] = forth.pop_any();
             if (type === 'string') {
                 result += value;
             } else if (type === 'symbol') {
@@ -137,7 +122,7 @@ function string_join_word_paired_symbols({forth}) {
 function _string_array_from_stack(forth) {
     let strings = [];
     for (;;) {
-        const {type, value} = forth.parameter_stack.pop();
+        const [type, value] = forth.pop_any();
         if (type === 'string') {
             strings.push(forth.strings.get(value));
         } else if (type === 'number') {
@@ -233,16 +218,29 @@ function string_lpad_word({forth}) {
     }
 }
 
+function string_replace_word({forth}) {
+    return () => {
+        const subjectString = forth.pop_string();
+        const replacementPattern = forth.pop_string();
+        const replacement = forth.pop_string();
+
+        const result = subjectString.replace(replacementPattern, replacement);
+        forth.parameter_stack.push(forth.string_value(result));
+    }
+}
+
 const StringVocabulary = (forth, options = {}) => {
-    forth.add_word('string', '=', string_equal_word);
     forth.add_word('', 'S=', string_equal_word);
+
+    forth.add_vocabulary('STRING', 'Extended string capabilities');
+    forth.add_word('string', '=', string_equal_word);
     forth.add_word('string', 'compare', string_compare_word);
     forth.add_word('string', 'length', string_length_word);
     forth.add_word('string', 'char-code', string_char_code_word);
+    forth.add_word('string', 'code-char', string_code_char_word);
     forth.add_word('string', 'concat', string_concat_word);
     forth.add_word('string', 'interpolate', string_interpolate_word);
     forth.add_word('string', 'interpolate-array', string_interpolate_array_word);
-    forth.add_word('string', 'replace', string_replace_word);
     forth.add_word('string', 'contains', string_contains_word);
     forth.add_word('string', 'join', string_join_word);
     forth.add_word('string', 'join-array', string_join_array_word);
@@ -250,6 +248,7 @@ const StringVocabulary = (forth, options = {}) => {
     forth.add_word('string', 'to-num', string_to_num_word);
     forth.add_word('string', 'char-at', string_char_at_word);
     forth.add_word('string', 'lpad', string_lpad_word);
+    forth.add_word('string', 'replace', string_replace_word);
 }
 
 export default StringVocabulary;

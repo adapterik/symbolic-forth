@@ -11,7 +11,8 @@ import UIVocabulary from "../lang/vocabulary_ui.js";
 import ArrayVocabulary from '../lang/vocabulary_array.js';
 import TestVocabulary from '../lang/vocabulary_test.js';
 import StringVocabulary from '../lang/vocabulary_string.js';
-// import SymbolVocabulary from '/lang/vocabulary_symbol.js';
+import SymbolVocabulary from '../lang/vocabulary_symbol.js';
+import MapVocabulary from '../lang/vocabulary_map.js';
 
 import AddStringTests from '../tests/string_tests.js';
 import AddDoLoopTests from '../tests/do_loop_tests.js';
@@ -24,7 +25,9 @@ import AddMathTests from '../tests/math_tests.js';
 import AddLocalTests from '../tests/local_tests.js';
 import AddSymbolTests from '../tests/symbol_tests.js';
 import AddVarTests from '../tests/var_tests.js';
+import AddVariableTests from '../tests/variable_tests.js';
 import AddConstTests from '../tests/const_tests.js';
+import AddMapTests from '../tests/map_tests.js';
 
 class Testing {
     constructor() {
@@ -82,14 +85,15 @@ class Testing {
         ArrayVocabulary(forth, {fresh: true});
         StringVocabulary(forth, {fresh: true});
         TimeVocabulary(forth, {fresh: true});
-        // SymbolVocabulary(forth, {fresh: true});
+        SymbolVocabulary(forth, {fresh: true});
+        MapVocabulary(forth, {fresh: true});
 
         forth.interpreter.add_code(test.code);
 
         forth.interpreter.run();
 
-        const {value: successes} = forth.variables.getNamed('test', 'TEST_SUCCESSES');
-        const {value: failures} = forth.variables.getNamed('test', 'TEST_FAILURES');
+        const [,successes] = forth.variables.getNamed('test', 'TEST_SUCCESSES');
+        const [,failures] = forth.variables.getNamed('test', 'TEST_FAILURES');
 
         test.successes = successes;
         test.failures = failures;
@@ -170,7 +174,9 @@ function main() {
     AddMathTests(testing);
     AddSymbolTests(testing);
     AddVarTests(testing);
+    AddVariableTests(testing);
     AddConstTests(testing);
+    AddMapTests(testing);
 
     testing.run_tests();
 }

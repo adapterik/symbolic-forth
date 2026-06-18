@@ -27,7 +27,7 @@ function create_word({forth}) {
 function push_word({forth}) {
     return () => {
         const stack = forth.pop_stack();
-        const value = forth.parameter_stack.pop();
+        const value = forth.pop_any();
         stack.push(value);
     }
 }
@@ -68,6 +68,7 @@ function empty_word({forth}) {
 }
 
 const StackVocabulary = (forth, options = {}) => {
+    forth.add_vocabulary('STACK', 'Adds capability toe use arbitrary stacks');
     forth.add_word('stack', 'create', create_word);
     forth.add_word('stack', 'push', push_word);
     forth.add_word('stack', 'pop', pop_word);

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Vocabularies | Manual | Symbolic FORTH</title>
+    <link rel="stylesheet" href="../index.css">
+    <meta charset="utf-8">
+</head>
+<body class="manual-page">
+
+
+<div id="header">
+    <div id="title">
+        Vocabularies
+    </div>
+    <div id="menu">
+        <a href="../index.html">Intro</a>
+        <a href="../types.html">Types</a>
+        <a href="index.html" class="selected">Vocabularies</a>
+        <a href="../ui.html">UI</a>
+        <a href="../../index.html" style="margin-left: 3rem;">Back Home</a>
+    </div>
+    <div id="alert"></div>
+</div>
+
+<div id="content" class="content">
+    <h1>Vocabularies</h1>
+
+    <p>Many FORTHs support a "vocabulary" feature. A vocabulary is essentially a namespace (a term used in many programming languages) - a separate storage structure in which words and data may be stored.</p>
+
+    <p>Each vocabulary has a name, such as <code>string</code>, used to prefix words available in the vocabulary. For instance <code>string::compare</code> is a word in the string vocabulary which allows one to obtain a string ordering comparison (as implemented in javascript's localeCompare method). Since this word is not relevant to any other data type, it is available only in the string vocabulary.</p>
+
+    <p>In fact, this is one of the primary uses of vocabularies - to make type-specific words available in a separate namespace.</p>
+
+    <p>Vocabularies are also very useful for providing functionality not needed in all situations. E.g. words for interacting with the DOM in the browser, or those for interacting with the standard library on the command line.
+    </p>
+
+    <p>Standard(ish) FORTH words are available in the core vocbulary, which may be accssed without any prefix (or with <code>::</code> if you like, but that is a bit silly.)</p>
+
+    <ul>
+        <li>
+            <a href="core.html">Core</a>
+        </li>
+        <li>
+            <a href="math.html">Math</a>
+        </li>
+        <li>
+            <a href="array.html">Array</a>
+        </li>
+        <li>
+            <a href="map.html">Map</a>
+        </li>
+    </ul>
+
+</body>
+
+</html>

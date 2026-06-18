@@ -16,7 +16,7 @@
     ( this is an error unless it is just the beginning and we don't have a
       number yet )
     DROP ( the matching char code )
-    ~EOF
+   SYM EOF
     RETURN
   THEN
   DROP
@@ -44,13 +44,13 @@
   BEGIN
     L@ file-handle read-field
 
-    DUP ~EOF eq IF DROP BREAK THEN
+    DUP SYM EOF eq IF DROP BREAK THEN
 
     DROP
 
 \      PRINTLN
 
-\      DUP ~EOF EQ IF BREAK THEN
+\      DUP SYM EOF EQ IF BREAK THEN
 
     L+! field-count
   REPEAT

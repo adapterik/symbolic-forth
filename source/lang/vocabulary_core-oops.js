@@ -47,7 +47,7 @@ function typeof_word() {
  * Implements the VAR word
  *
  * This version of a variable uses a symbol to access the variable.
- * Thus we write 10 ~myvar VAR to create and set the variable named
+ * Thus we write 10SYM myvar VAR to create and set the variable named
  * "myvar" to the numeric value "10".
  * The words VAR@ and VAR! are used to, respectively, fetch and set
  * the value of the given var.
@@ -123,7 +123,7 @@ function variable_word({interpreter, forth}) {
      * Implements the VAR word
      *
      * This version of a variable uses a symbol to access the variable.
-     * Thus we write 10 ~myvar VAR to create and set the variable named
+     * Thus we write 10SYM myvar VAR to create and set the variable named
      * "myvar" to the numeric value "10".
      * The words VAR@ and VAR! are used to, respectively, fetch and set
      * the value of the given var.
@@ -521,7 +521,7 @@ function symbol_name_word({forth}) {
  * Implements the VAR word
  *
  * This version of a variable uses a symbol to access the variable.
- * Thus we write 10 ~myvar VAR to create and set the variable named
+ * Thus we write 10SYM myvar VAR to create and set the variable named
  * "myvar" to the numeric value "10".
  * The words VAR@ and VAR! are used to, respectively, fetch and set
  * the value of the given var.

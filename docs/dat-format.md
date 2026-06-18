@@ -30,14 +30,14 @@ The header contains the column definitions, primarily the column identifiers.
 foo bar baz
 
 ```
-3foo 3bar 3baz
+3 foo 3 bar 3 baz
 ```
 
 hmm, what if it was a self-executing file?
 
 10 column-count 1234 row-count 
-A[ ~string ~date ~number ] column-types 
-A[ ~foo ~bar ~baz ] column-names
+A[SYM stringSYM dateSYM number ] column-types 
+A[SYM fooSYM barSYM baz ] column-names
 
 anyway, probably better, certainly more portable:
 

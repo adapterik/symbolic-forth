@@ -135,8 +135,8 @@ A[ 20 60 29 79 ] CONST status-window
 A[ 0 72 0 79 ] CONST clock-window
 
 : app::display-clock ( row/number col/number window/array -- )
-   ~green clock-window app::background-color
-   ~white clock-window app::text-color
+  SYM green clock-window app::background-color
+  SYM white clock-window app::text-color
 ;
 
 : app::display-clock-time
@@ -160,26 +160,26 @@ A[ 0 72 0 79 ] CONST clock-window
 ;
 
 \  : app::start-clock
-\      ~app::display-clock 500 dom::interval-timer
+\     SYM app::display-clock 500 dom::interval-timer
 \  ;
 
 : main
     ( word to get screen element )
-    ~#screen DOM::SELECT L:> screen
+   SYM #screen DOM::SELECT L:> screen
 
     ( set the background color of the whole area )
-    ~aqua ~background-color L@ screen DOM::STYLE
+   SYM aqua SYM background-color L@ screen DOM::STYLE
 
     ( set background colors of our windows )
-    ~silver text-window app::background-color
-    ~yellow status-window app::background-color
+   SYM silver text-window app::background-color
+   SYM yellow status-window app::background-color
 
     ( 5 5 app::cell PRINTLN )
 
     ( word to set the background color of a cell element )
-    ~green  {  5  5 text-window app::cell } app::cell-background-color
-    ~red    { 15 15 text-window app::cell } app::cell-background-color
-    ~blue   { 29 0 text-window app::cell }  app::cell-background-color
+   SYM green  {  5  5 text-window app::cell } app::cell-background-color
+   SYM red    { 15 15 text-window app::cell } app::cell-background-color
+   SYM blue   { 29 0 text-window app::cell }  app::cell-background-color
 
     " hello, this is the SCREEN app"   0 0 text-window app::print
     " it is our next ui target"        1 0 text-window app::print

@@ -1,5 +1,6 @@
 // import {forth_new, forth_input_code, forth_compile_tokens, forth_run_programx} from "./forth.js";
 import * as F from '/lang/forth.js';
+import WebUI from '/lang/forth-browser.js';
 import CoreVocabulary from "/lang/vocabulary_core.js";
 // import {init as init_io} from "/lang/vocabulary_io.js";
 import IOVocabulary from '/lang/vocabulary_io.js';
@@ -49,7 +50,7 @@ function update_display(forth) {
 
     // empty the body
     data_stack_table_body_el.innerHTML = '';
-    forth.parameter_stack.forEach(({type, value}, stack_counter) => {
+    forth.parameter_stack.forEach(([type, value], stack_counter) => {
         data_stack_table_body_el.innerHTML += `
         <div class="row">
         <div class="cell index">
@@ -70,7 +71,7 @@ function update_display(forth) {
     const return_stack_el = document.querySelector('#stacks > #return');
     const return_stack_table_body_el = return_stack_el.querySelector('.table .body');
     return_stack_table_body_el.innerHTML = '';
-    forth.return_stack.forEach(({type, value}, stack_counter) => {
+    forth.return_stack.forEach(([type, value], btack_counter) => {
         return_stack_table_body_el.innerHTML += `
         <div class="row">
         <div class="cell index">
@@ -88,9 +89,10 @@ function update_display(forth) {
 
     // update variables
     const variables_el = document.querySelector('#store > #variables');
+    // simpleTableDisplay(variables_el, forth.variables)
     const variables_table_body_el = variables_el.querySelector('.body > .table > .body');
     variables_table_body_el.innerHTML = '';
-    forth.variables.forEach(({vocabulary, name, value: {type, value}}) => {
+    forth.variables.forEach(({vocabulary, name, value: [type, value]}) => {
         // get the value for the variable...
        variables_table_body_el.innerHTML += `
          <div class="row">
@@ -105,13 +107,15 @@ function update_display(forth) {
     const constants_el = document.querySelector('#store > #constants');
     const constants_table_body_el = constants_el.querySelector('.body > .table > .body');
     constants_table_body_el.innerHTML = '';
-    forth.constants.forEach(({vocabulary, name, value: {type, value}}) => {
+    forth.constants.forEach(({vocabulary, name, value: [type, value]}) => {
+        const stringValue = forth.to_string([type, value]);
         // get the value for the variable...
         constants_table_body_el.innerHTML += `
         <div class="row">
         <div class="cell">${vocabulary === '' ? '-' : vocabulary}</div>
         <div class="cell">${name}</div>
         <div class="cell">${type}</div>
+        <div class="cell">${stringValue}</div>
         </div>
         `;
     });
@@ -123,7 +127,6 @@ function update_display(forth) {
 
     // whew!
 }
-
 
 function main() {
 
@@ -142,9 +145,11 @@ function main() {
         // TODO: implement this
         onCompileWord: update_display,
         onRunWord: update_display,
-        outputSelector: '#output',
-        consoleSelector: '#console',
-        onInitialize: setupForth
+        onInitialize: setupForth,
+        ui: new WebUI({
+            outputSelector: '#output',
+            consoleSelector: '#console'
+        })
     });
 
 
@@ -165,10 +170,10 @@ function main() {
             const start = Date.now();
             forth.interpreter.run(code_text);
             const elapsed = Date.now() - start;
-            console.log('elapsed', elapsed);
-            forth.ui.console('Ok.');
+            // console.log('elapsed', elapsed);
+            forth.ui.println('Ok.');
         } catch (ex) {
-            forth.ui.console(`Error! ${ex.message}`);
+            forth.ui.println(`Error! ${ex.message}`);
             // console.error(`Error! ${ex.message}`);
             forth.reset();
             update_display(forth);

@@ -3,17 +3,21 @@ import Vocabulary from './vocabulary.js'
 import { log } from "./vocabulary_utils.js";
 import ForthInterpreter from './forth_interpreter.js';
 
+// CORE funcdtionality
+
+function vocabulary_word({forth}) {
+    return () => {
+        const description = forth.pop_string();
+        const name = forth.pop_string();
+
+        forth.add_vocabulary(name, description);
+    }
+}
+
 // COMMENTS
 
 function reset_word({forth}) {
     forth.initialize();
-    // forth.parameter_stack.empty();
-    // forth.return_stack.empty();
-    // forth.contexts[0] = new ForthContext();
-    // forth.constants.empty();
-    // forth.strings.empty();
-    // forth.objects.empty();
-    // forth.dictionary.empty();
 }
 
 function comment_word({interpreter}) {
@@ -24,6 +28,24 @@ function line_comment_word({interpreter}) {
     interpreter.read_code_until("\n");
 }
 
+// Generate values on stack.
+
+function null_word({forth}) {
+    return ({forth}) => {
+        forth.parameter_stack.push(forth.null_value());
+    };
+}
+
+function true_word({forth}) {
+    return ({forth}) => {
+        forth.parameter_stack.push(forth.bool_value(true));
+    };
+}
+function false_word({forth}) {
+    return ({forth}) => {
+        forth.parameter_stack.push(forth.bool_value(false));
+    };
+}
 // TYPE Queries
 /*
 function typeof_word() {
@@ -36,7 +58,7 @@ function typeof_word() {
 
 function typeof_word() {
     return ({forth}) => {
-        const {type: value_type} = forth.parameter_stack.pop();
+        const [value_type,] = forth.pop_any();
         forth.parameter_stack.push(forth.string_value(value_type));
     }
 }
@@ -47,7 +69,7 @@ function typeof_word() {
  * Implements the VAR word
  *
  * This version of a variable uses a symbol to access the variable.
- * Thus we write 10 ~myvar VAR to create and set the variable named
+ * Thus we write 10SYM myvar VAR to create and set the variable named
  * "myvar" to the numeric value "10".
  * The words VAR@ and VAR! are used to, respectively, fetch and set
  * the value of the given var.
@@ -56,7 +78,7 @@ function typeof_word() {
  * constants, as well as using symbols for their name property.
  **/
 function pop_symbol_or_string(f) {
-    const {type, value} = f.parameter_stack.pop();
+    const [type, value] = f.pop_any();
     if (type === 'string') {
         return f.dictionary.parse_token(f.strings.get(value));
     } else if (type === 'symbol') {
@@ -66,42 +88,56 @@ function pop_symbol_or_string(f) {
     }
 }
 
-function var_word({interpreter}) {
-    const f = interpreter.forth;
+function var_word({forth}) {
     // Look, ma, no compile-time behavior!
     return () => {
-        const {vocabulary, name} = pop_symbol_or_string(f);
+        const {vocabulary, name} = pop_symbol_or_string(forth);
 
-        const variableValue = f.parameter_stack.pop();
+        const variableValue = forth.pop_any();
 
         // Since we don't create a word to embed the variable id,
         // we ignore the return value.
-        f.variables.create(vocabulary, name, variableValue);
+        forth.variables.create(vocabulary, name, variableValue);
     }
 }
 
-function var_fetch_word({interpreter}) {
-    const f = interpreter.forth;
+function var_fetch_word({forth, interpreter}) {
     return () => {
-        const {vocabulary, name} = pop_symbol_or_string(f);
-
-        const value = f.variables.getNamed(vocabulary, name);
-
-        f.parameter_stack.push(value);
+        const {vocabulary, name} = pop_symbol_or_string(forth);
+        const value = forth.variables.getNamed(vocabulary, name);
+        forth.parameter_stack.push(value);
     }
 }
 
-function var_store_word({interpreter}) {
-    const f = interpreter.forth;
+function var_store_word({forth, interpreter}) {
     return () => {
-        const {vocabulary, name} = pop_symbol_or_string(f);
-
-        const value = f.parameter_stack.pop();
-
-        f.variables.setNamed(vocabulary, name, value);
+        const {vocabulary, name} = pop_symbol_or_string(forth);
+        const value = forth.pop_any();
+        forth.variables.setNamed(vocabulary, name, value);
     }
 }
 
+
+// These next two parse the variable name out of the token stream, rather
+// then use a symbol (as for VAR) or the variable word (as for @ and !)
+
+function v_fetch_word({forth, interpreter}) {
+    const variable_ref = interpreter.next_input_token();
+    const {vocabulary, name} = forth.dictionary.parse_token(variable_ref);
+    return () => {
+        const value = forth.variables.getNamed(vocabulary, name);
+        forth.parameter_stack.push(value);
+    }
+}
+
+function v_store_word({forth, interpreter}) {
+    const variable_ref = interpreter.next_input_token();
+    const {vocabulary, name} = forth.dictionary.parse_token(variable_ref);
+    return () => {
+        const value = forth.pop_any();
+        forth.variables.setNamed(vocabulary, name, value);
+    }
+}
 function variable_word({interpreter, forth}) {
     const variable_ref = interpreter.next_input_token();
     if (!variable_ref) {
@@ -118,7 +154,7 @@ function variable_word({interpreter, forth}) {
     const var_id = forth.variables.create(vocabulary, name, forth.null_value());
     forth.variables.createWord(vocabulary, name);
     return () => {
-        const initialValue = forth.parameter_stack.pop(forth);
+        const initialValue = forth.pop_any();
         forth.variables.set(var_id, initialValue);
     }
 }
@@ -142,7 +178,7 @@ function variable_word({interpreter, forth}) {
 //      * Implements the VAR word
 //      *
 //      * This version of a variable uses a symbol to access the variable.
-//      * Thus we write 10 ~myvar VAR to create and set the variable named
+//      * Thus we write 10SYM myvar VAR to create and set the variable named
 //      * "myvar" to the numeric value "10".
 //      * The words VAR@ and VAR! are used to, respectively, fetch and set
 //      * the value of the given var.
@@ -190,130 +226,41 @@ function variable_word({interpreter, forth}) {
 // }
 
 function variable_store_word({interpreter, forth}) {
-    // const variable_ref = interpreter.next_input_token();
-    // if (!variable_ref) {
-    //     throw new Error(`Sorry, '${type}' no variable name provided`);
-    // }
-    // const {vocabulary, name} = forth.dictionary.parse_token(variable_ref);
-
-    // const variable_id = forth.currentContext().variables.create(vocabulary, name, forth.null_value());
-
     return () => {
-        const {type: var_type, value: var_id} = forth.parameter_stack.pop();
-        const value = forth.parameter_stack.pop();
-        forth.variables.set(var_id, value);
-        // forth.currentContext().variables.set(variable_id, value);
-      /*  const {vocabulary, name} = forth.dictionary.parse_token(variable_ref);
-        forth.variables.create(vocabulary, name, initial_value); */
+        const id = forth.pop_variable();
+        const value = forth.pop_any();
+
+        forth.variables.set(id, value);
     }
 }
 
 function variable_fetch_word({forth}) {
     return () => {
-        const {type: var_type, value: var_id} = forth.parameter_stack.pop();
-        const value = forth.variables.get(var_id);
+        const id = forth.pop_variable();
+        const value = forth.variables.get(id);
         forth.parameter_stack.push(value);
-        // forth.currentContext().variables.set(variable_id, value);
-        /*  const {vocabulary, name} = forth.dictionary.parse_token(variable_ref);
-         *   forth.variables.create(vocabulary, name, initial_value); */
     }
-//     return () => {
-//         // get the variable id from the stack
-//         const {type, value} = forth.parameter_stack.pop();
-//
-//         switch (type) {
-//             case 'symbol':
-//                 // const variable_value = forth_get_variable_from_symbol(forth, value);
-//                 // const variable_value = forth_get_variable(forth, value);
-//                 const {vocabulary, name} = forth.dictionary_parse_token(value);
-//                 const variable = forth.variables.get_from_name(vocabulary, name);
-//                 if (!variable) {
-//                     throw new Error(`no variable can be fetched for '${vocabulary}::${name}'`);
-//                 }
-//                 forth.parameter_stack.push(variable.value);
-//                 break;
-//             case 'number':
-//                 // const variable_value = ;
-//                 // console.log('fetch?', value, forth.variables.get(value).value.type);
-//                 forth.parameter_stack.push(forth.variables.get(value).value);
-//                 break;
-//             default:
-//                 throw new Error(`Sorry, '${type}' not a supported variable ref`);
-//         }
-//     }
 }
-
-// function store_word({forth}) {
-//     return () => {
-//         const variable_value = forth.parameter_stack.pop();
-//         const value_to_store = forth.parameter_stack.pop();
-//
-//         switch (variable_value.type) {
-//             case 'symbol':
-//                 const {vocabulary, name} = forth.dictionary.parse_token(forth.symbol.get(variable_value.value);
-//
-//                 forth.contextStack.doOnce((stackItem) => {
-//                     if (stackItem.variables.hasNamed(vocabulary, name)) {
-//                         stackItem.variables.setNamed(vocabular, name, value_to_store);
-//                         return true;
-//                     }
-//                     return false;
-//                 });
-//                 break;
-//             case 'number':
-//                 forth.contextStack.doOnce((stackItem) => {
-//                     if (stackItem.variables.has(variable_value.value)) {
-//                         stackItem.variables.set(variable_value.value, value_to_store);
-//                         return true;
-//                     }
-//                     return false;
-//                 });
-//                 break;
-//             default:
-//                 throw new Error(`Sorry, '${variable_value.type}' not a supported variable ref`);
-//         }
-//     }
-// }
 
 function inc_variable_word({forth}) {
     return () => {
-        const {type: ref_type, value: var_id} = forth.parameter_stack.pop();
-        // TODO: ref type should be 'variable'!
-        if (ref_type !== 'variable') {
-            throw new Error(`variable ref must be a 'variable', but is a '${ref_type}'`);
-        }
+        const var_id = forth.pop_variable();
 
-        const {type: var_type, value: var_value} = forth.variables.get(var_id);
+        const [var_type, var_value] = forth.variables.get(var_id);
 
         if (var_type !== 'number') {
             throw new Error(`variable value for inc! must be a number, is '${var_type}`);
         }
 
         forth.variables.set(var_id, forth.number_value(var_value + 1));
-
-        // forth.contextStack.doOnce((stackItem) => {
-        //     const variable = stackItem.variables.get(variable_ref);
-        //     if (!variableRef) {
-        //         return;
-        //     }
-        //     if (variable_value.type !== 'number') {
-        //         forth.console(`Error! Cannot 'inc' a value of type ${variable_value.type}`);
-        //                           return false;
-        //     }
-        //     variable_value.value += 1;
-        //     return true;
-        // });
     }
 }
 
 function dec_variable_word({forth}) {
     return () => {
-        const {type: ref_type, value: var_id} = forth.parameter_stack.pop();
-        if (ref_type !== 'variable') {
-            throw new Error(`variable ref must be a 'variable', but is a '${ref_type}'`);
-        }
+        const var_id = forth.pop_variable();
 
-        const {type: var_type, value: var_value} = forth.variables.get(var_id);
+        const [var_type, var_value] = forth.variables.get(var_id);
 
         if (var_type !== 'number') {
             throw new Error(`variable value for dec! must be a number, is '${var_type}`);
@@ -422,7 +369,7 @@ function const_word({interpreter, forth}) {
     const constant_id = forth.constants.create(vocabulary, name, forth.null_value());
 
     return () => {
-        const value = forth.parameter_stack.pop();
+        const value = forth.pop_any();
         forth.constants.set(constant_id, value);
     }
 }
@@ -439,8 +386,8 @@ function local_word({interpreter, forth}) {
     }
 
     return () => {
-        const value = forth.parameter_stack.pop();
-        forth.currentContext().locals[local_ref] = value;
+        const value = forth.pop_any();
+        forth.currentContext().createLocal(local_ref, value);
     }
 }
 
@@ -464,25 +411,54 @@ function local_store_word({interpreter, forth}) {
         throw new Error(`Sorry, no local name provided`);
     }
     return () => {
-        // const variable_value = forth.parameter_stack.pop();
-        const value_to_store = forth.parameter_stack.pop();
+        const value_to_store = forth.pop_any();
         // we don't have a fancy namespaced variable ref for locls.
-        // context.locals[variable_value.value] = value_to_store;
         forth.currentContext().locals[local_ref] = value_to_store;
     }
 }
 
-function local_incr_word({interpreter, forth}) {
+function local_store_search_word({interpreter, forth}) {
     const local_ref =   interpreter.next_input_token();
     if (!local_ref) {
         throw new Error(`Sorry, no local name provided`);
     }
     return () => {
+        const value_to_store = forth.pop_any();
+        // we don't have a fancy namespaced variable ref for locls.
+        forth.currentContext().locals[local_ref] = value_to_store;
+    }
+}
+function local_incr_word({interpreter, forth}) {
+    const local_ref =   interpreter.next_input_token();
+    if (!local_ref) {
+        throw new Error(`Sorry, no local name provided`);
+    }478957
+    return () => {
         const local = forth.currentContext().locals[local_ref];
-        if (local.type !== 'number') {
-            throw new Error(`cannot increment a local of type '${local.type}'`);
+        if (local[0] !== 'number') {
+            throw new Error(`cannot increment a local of type '${local[0]}'`);
         }
-        local.value += 1;
+        local[1] += 1;
+    }
+}
+
+function local_incr_search_word({interpreter, forth}) {
+    const local_ref =   interpreter.next_input_token();
+    if (!local_ref) {
+        throw new Error(`Sorry, no local name provided`);
+    }
+    return () => {
+        forth.currentContext().modifyLocal(name, ([type, value]) => {
+            if (type === 'number') {
+                value += 1;
+            }
+            return [type, value];
+        });
+        const local = forth.currentContext().locals[local_ref];
+        if (local[0] !== 'number') {
+            throw new Error(`cannot increment a local of type '${local[1]}'`);
+        }
+        local[1] += 1;
     }
 }
 
@@ -492,7 +468,7 @@ function local_fetch_word({interpreter, forth}) {
         throw new Error(`no local name provided`);
     }
     return ({}) => {
-        const local = forth.currentContext().getLocal(local_ref);
+        const local = forth.currentContext().getLocal(local_ref, false);
         if (typeof local === 'undefined') {
             throw new Error(`local '${local_ref}' does not exist in this context`);
         }
@@ -500,6 +476,19 @@ function local_fetch_word({interpreter, forth}) {
     }
 }
 
+function local_fetch_search_word({interpreter, forth}) {
+    const local_ref =   interpreter.next_input_token();
+    if (!local_ref) {
+        throw new Error(`no LOCAL name provided`);
+    }
+    return ({}) => {
+        const local = forth.currentContext().getLocal(local_ref, true);
+        if (typeof local === 'undefined') {
+            throw new Error(`LOCAL '${local_ref}' does not exist in this or any ancestor context`);
+        }
+        forth.parameter_stack.push(local);
+    }
+}
 // TYPES
 
 
@@ -551,17 +540,12 @@ function string_word({interpreter, forth}) {
 
 function symbol_word({interpreter, forth}) {
     const symbol_name = interpreter.next_input_token();
+
     return () => {
         forth.parameter_stack.push(forth.symbol_value(symbol_name));
     }
 }
 
-function symbol_name_word({forth}) {
-    return () => {
-        const symbol = forth.pop_symbol();
-        forth.parameter_stack.push(forth.string_value(symbol.name));
-    };
-}
 
 // symbol VAR
 
@@ -569,7 +553,7 @@ function symbol_name_word({forth}) {
  * Implements the VAR word
  *
  * This version of a variable uses a symbol to access the variable.
- * Thus we write 10 ~myvar VAR to create and set the variable named
+ * Thus we write 10 SYM myvar VAR to create and set the variable named
  * "myvar" to the numeric value "10".
  * The words VAR@ and VAR! are used to, respectively, fetch and set
  * the value of the given var.
@@ -622,7 +606,7 @@ function if_word({interpreter, forth}) {
         // we have reached the end of this IF..THEN control program and
         // return a word which c(mapValue[key]onditionally runs a word list.
         return () => {
-            const value = forth.parameter_stack.pop();
+            const value = forth.pop_any();
             if (forth.is_truthy(value)) {
                 // A logic control flow structure should be transparent -
                 // that is, we make use it to break out of a loop, or return
@@ -635,7 +619,7 @@ function if_word({interpreter, forth}) {
     const [else_stop_word, else_program] = interpreter.compile_until( ['THEN']);
 
     return () => {
-        const value = forth.parameter_stack.pop();
+        const value = forth.pop_any();
         if (forth.is_truthy(value)) {
             interpreter.run_word_list(if_program);
         } else if (else_program !== null) {
@@ -682,7 +666,7 @@ function cond_word({interpreter, forth}) {
             if (success) {
                 // drop the original value to test against.
                 // otherwise we leave it there for the next test, if any.
-                forth.parameter_stack.pop();
+                forth.pop_any();
                 // do what was asked of us!
                 interpreter.run_word_list(of_program);
                 break;
@@ -692,13 +676,13 @@ function cond_word({interpreter, forth}) {
         // If we didn't actually run matching branch, we still need to
         // drop the original value to test against.
         if (!success) {
-            forth.parameter_stack.pop();
+            forth.pop_any();
         }
     }
 }
 function exec_word({interpreter, forth}) {
     return () => {
-        const {type, value} = forth.parameter_stack.pop();
+        const [type, value] = forth.pop_any();
         // TODO: check type
 
         let word_token;
@@ -715,28 +699,28 @@ function exec_word({interpreter, forth}) {
 
 function truthy_word({forth}) {
     return () => {
-        const value = forth.parameter_stack.pop();
+        const value = forth.pop_any();
         forth.parameter_stack.push(forth.bool_value(forth.is_truthy(value)));
     }
 }
 
 function falsey_word({forth}) {
     return () => {
-        const value = forth.parameter_stack.pop();
+        const value = forth.pop_any();
         forth.parameter_stack.push(forth.bool_value(!forth.is_truthy(value)));
     }
 }
 
 function not_word({forth}) {
     return () => {
-        const value = forth.parameter_stack.pop();
+        const value = forth.pop_any();
         forth.parameter_stack.push(forth.bool_value(!forth.is_truthy(value)));
     }
 }
 
 function nullp_word({forth}) {
     return () => {
-        const {type} = forth.parameter_stack.pop();
+        const [type,] = forth.pop_any();
         forth.parameter_stack.push(forth.bool_value(type === 'null'));
     }
 }
@@ -794,6 +778,31 @@ function do_word({interpreter, forth}) {
     }
 }
 
+function doindex_word({interpreter, forth}) {
+    const [,program] = interpreter.compile_until( ['LOOP']);
+
+    return () => {
+        const start = forth.pop_number();
+        const end = forth.pop_number();
+
+        for (let i = start; i < end; i += 1) {
+            // NB the code in the loop MUST pop this
+            forth.parameter_stack.push(forth.number_value(i));
+            interpreter.run_word_list(program);
+            switch(forth.controlFlowState) {
+                case 'break':
+                    forth.resetControlFlowState();
+                    return;
+                case 'continue':
+                    forth.resetControlFlowState();
+                    break;
+                case 'return':
+                case 'exit':
+                    return;
+            }
+        }
+    }
+}
 function doi_wordx({interpreter, forth}) {
     const [,program] = interpreter.compile_until( ['LOOP']);
 
@@ -831,7 +840,9 @@ function doi_word({interpreter, forth}) {
         const start = forth.pop_number();
         const end = forth.pop_number();
 
-        const context = forth.enterContext(true);
+        const context = forth.enterContext('doi', true);
+        context.createLocal('I', forth.null_value());
+
         // context.setLocal('I', forth.number_value(start));
 
         for (let i = start; i < end; i += 1) {
@@ -914,8 +925,9 @@ function every_word({forth, interpreter}) {
         }, interval);
     }
 }
+
 function colon_word({forth, interpreter}) {
-    return () => {
+    // return () => {
         const word_name = interpreter.next_input_token();
         const {vocabulary, name} = interpreter.forth.dictionary.parse_token(word_name);
 
@@ -923,7 +935,7 @@ function colon_word({forth, interpreter}) {
 
         const word = () => {
             return () => {
-                forth.enterContext();
+                forth.enterContext(`[word]${word_name}`, false);
                 interpreter.run_word_list(word_list);
 
                 switch (forth.controlFlowState) {
@@ -942,6 +954,47 @@ function colon_word({forth, interpreter}) {
         };
 
         forth.add_word(vocabulary, name, word);
+    // }
+    return null;
+}
+
+function word_list_word({forth, interpreter}) {
+        const [,word_list] = interpreter.compile_until([']']);
+
+        const word = ({forth}) => {
+                // forth.enterContext('wordlist', false);
+                forth.interpreter.run_word_list(word_list);
+
+                // switch (forth.controlFlowState) {
+                //     case null: break;
+                //     case 'break':
+                //     case 'continue':
+                //         console.log(`Unexpected control flow state for word: '${forth.controlFlowState}'`);
+                //         forth.resetControlFlowState();
+                //         break;
+                //     case 'return': forth.resetControlFlowState(); break;
+                //     case 'exit': break;
+                // }
+
+                // forth.leaveContext();
+        };
+
+        return ({forth}) => {
+            forth.parameter_stack.push(forth.word_value(word));
+        }
+}
+
+function run_word({forth}) {
+    return () => {
+        const word = forth.pop_word();
+        word({forth});
+    }
+}
+
+function defer_word({forth}) {
+    return () => {
+        const word = forth.pop_word();
+        forth.currentContext().addDeferWord(word);
     }
 }
 
@@ -956,29 +1009,15 @@ function colon_word({forth, interpreter}) {
     **/
 
 function numeric_comparison(forth, operation_label, operation) {
-    const value2 = forth.parameter_stack.pop();
-    const value1 = forth.parameter_stack.pop();
-
-    if (value1.type !== value2.type) {
-        return forth.error(`${operation_label} may not be applied to two values of different types '${value1.type}' and '${value2.type}'`);
-    }
-
-    switch (value1.type) {
-        case 'number':
-            // console.log('comparison', value1.value, value2.value, operation(value1.value, value2.value));
-            forth.parameter_stack.push(forth.bool_value(operation(value1.value, value2.value)));
-            break;
-        default:
-            forth.error(`${operation_label} not applicable to type '${value1.type}'`);
-    }
+    const num2 = forth.pop_number();
+    const num1 = forth.pop_number();
+    forth.parameter_stack.push(forth.bool_value(operation(num1, num2)));
 }
 
 function eq_word({forth}) {
     return () => {
-        const x = forth.parameter_stack.pop();
-        const {type: type2, value: value2} = x;
-        // const {type: type2, value: value2} = forth.parameter_stack.pop();
-        const {type: type1, value: value1} = forth.parameter_stack.pop();
+        const [type2, value2] = forth.pop_any();
+        const [type1, value1] = forth.pop_any();
         if (type1 !== type2) {
             forth.parameter_stack.push(forth.bool_value(false));
             return;
@@ -990,7 +1029,7 @@ function eq_word({forth}) {
             case 'boolean':
                 return forth.parameter_stack.push(forth.bool_value(value1 === value2));
             default:
-                 forth.error(`eq not applicable to type '${value1.type}'`);
+                 forth.error(`eq not applicable to type '${type1}'`);
         }
     };
 }
@@ -1071,7 +1110,7 @@ function npick_word({forth}) {
 
 function drop_word({forth}) {
     return () => {
-        forth.parameter_stack.pop();
+        forth.pop_any();
     };
 }
 
@@ -1086,7 +1125,7 @@ function depth_word({forth}) {
 
 function return_stack_pop_word({forth}) {
     return () => {
-        forth.parameter_stack.push(forth.return_stack.pop());
+        forth.parameter_stack.push(forth.pop_any());
     }
 }
 
@@ -1098,13 +1137,13 @@ function return_stack_copy_word({forth}) {
 
 function pop_to_return_stack_word({forth}) {
     return () => {
-        forth.return_stack.push(forth.parameter_stack.pop());
+        forth.return_stack.push(forth.pop_any());
     }
 }
 
 function return_stack_drop_word({forth}) {
     return () => {
-        forth.return_stack.pop();
+        forth.pop_any();
     }
 }
 
@@ -1127,7 +1166,7 @@ function stackmark_word({forth}) {
 function stackmark_equal_word({forth}) {
     return () => {
         let isStackmark = false;
-        const {type, value} = forth.parameter_stack.pop();
+        const [type, value] = forth.pop_any();
         if (type === 'symbol') {
             const symbol = forth.symbols.get(value);
             if (symbol.name === 'stackmark') {
@@ -1145,14 +1184,51 @@ function noop_token_word () {
 
 function to_string_word({forth}) {
     return () => {
-        const item = forth.parameter_stack.pop();
+        const item = forth.pop_any();
         forth.parameter_stack.push(forth.string_value(forth.to_string(item)));
     };
 }
+
 function to_int_word({forth}) {
     return () => {
-        const item = forth.parameter_stack.pop();
-        forth.parameter_stack.push(forth.number_value(forth.to_int(item)));
+        const item = forth.pop_any();
+        const maybeInt = forth.to_int(item);
+        if (isNaN(maybeInt)) {
+            forth.parameter_stack.push(forth.null_value());
+        } else {
+            forth.parameter_stack.push(forth.number_value(maybeInt));
+        }
+    };
+}
+
+function to_number_word({forth}) {
+    return () => {
+        const item = forth.pop_any();
+        const maybeNumber = forth.to_number(item);
+
+        if (isNaN(maybeNumber)) {
+            forth.parameter_stack.push(forth.null_value());
+        } else {
+            forth.parameter_stack.push(forth.number_value(maybeNumber));
+        }
+    };
+}
+
+// LEFT OFF HERE
+// How are we going to do date conversion?
+// I think we need to insist on a normal date form, ISO 8601 w/o time for dates,
+// ISO 8601 for datetime. Time is different. We can use custom date parsers to
+// coerce funny dates into real dates. What to do about timezones is a different
+// matter. It will be a case-by-case basis, I'm afraid, as most sources of dates
+// do not include the timezone or offset.
+// FOr instance, in the voting data, since it is localized to a state or
+// portion of a state, we can assume a timezone/offset I'm pretty sure.
+function to_date_word({forth}) {
+    return () => {
+        const item = forth.pop_any();
+        // does not exist yet
+        const maybeDate = forth.to_epoch_time(item);
+        forth.parameter_stack.push(forth.number_value(maybeDate));
     };
 }
 /**
@@ -1179,23 +1255,27 @@ let run_count = 0;
 
 const CoreVocabulary = (forth, options = {}) => {
 
-    // if (run_count > 0 && !options.fresh) {
-    //     return;
-    // }
-    // run_count += 1;
 
-    // forth.variables.addVocabulary('', 'The global vocabulary');
+    forth.dictionary.add_vocabulary('', 'The global vocabulary');
+
+    forth.add_word('', 'VOCABULARY', vocabulary_word);
+
     // comments
     forth.add_word('', '(', comment_word);
     forth.add_word('', '\\', line_comment_word);
-    forth.add_word('', '//', line_comment_word);
+
+    forth.add_word('', 'NULL', null_word);
+    forth.add_word('', 'TRUE', true_word);
+    forth.add_word('', 'FALSE', false_word);
+
 
     // Parameter stack
     forth.add_word('', "DUP", dup_word);
-    forth.add_word('', "SWAP", swap_word);
-    forth.add_word('', 'NPICK', npick_word);
     forth.add_word('', "DROP", drop_word);
     forth.add_word('', 'DEPTH', depth_word);
+
+    forth.add_word('', "SWAP", swap_word);
+    forth.add_word('', 'NPICK', npick_word);
     forth.add_word('', '#', stackmark_word);
     forth.add_word('', '#=', stackmark_equal_word);
 
@@ -1232,6 +1312,8 @@ const CoreVocabulary = (forth, options = {}) => {
 
     // Variables
     forth.add_word('', 'VARIABLE', variable_word);
+    forth.add_word('', 'V@', v_fetch_word);
+    forth.add_word('', 'V!', v_store_word);
     // forth.add_word('', '!VAR', var_store_word);
     forth.add_word('', '!', variable_store_word);
     forth.add_word('', '@', variable_fetch_word);
@@ -1254,28 +1336,39 @@ const CoreVocabulary = (forth, options = {}) => {
 
     // Locals
     forth.add_word('', 'LOCAL', local_word);
-    forth.add_word('', 'L:>', local_word);
-    forth.add_word('', 'L:>[', local_spread_word);
     forth.add_word('', 'LOCAL@', local_fetch_word);
     forth.add_word('', 'L@', local_fetch_word);
-    forth.add_word('', 'L<-', local_fetch_word);
     forth.add_word('', 'LOCAL!', local_store_word);
     forth.add_word('', 'L!', local_store_word);
-    forth.add_word('', 'L->', local_store_word);
-    forth.add_word('', 'L+!', local_incr_word);
 
-    // conditional
+
+    forth.add_word('', 'L:>', local_word);
+    forth.add_word('', 'L:>[', local_spread_word);
+    forth.add_word('', 'L<-', local_fetch_word);
+    forth.add_word('', 'L<<-', local_fetch_search_word);
+    forth.add_word('', 'L@@', local_fetch_search_word);
+    forth.add_word('', 'L->', local_store_word);
+    forth.add_word('', 'L->>', local_store_search_word);
+    forth.add_word('', 'L+>', local_incr_word);
+    forth.add_word('', 'L+>>', local_incr_search_word);
+
+
+    // conditional logic
     forth.add_word('', 'IF', if_word);
     forth.add_word('', 'FALSEY', falsey_word);
     forth.add_word('', 'TRUTHY', truthy_word);
     forth.add_word('', 'NOT', not_word);
+
+    // Various predicate tests
     forth.add_word('', 'NULLP', nullp_word);
+    forth.add_word('', 'IS-NULL', nullp_word);
 
     forth.add_word('', 'COND', cond_word);
 
     // Loops and such.
     forth.add_word('', 'DO', do_word);
     forth.add_word('', 'DOI', doi_word);
+    forth.add_word('', 'DOINDEX', doindex_word);
 
     forth.add_word('', 'EXIT', exit_word);
     forth.add_word('', 'BREAK', break_word);
@@ -1298,7 +1391,6 @@ const CoreVocabulary = (forth, options = {}) => {
     // Symbol
     forth.add_word('', "~", symbol_word);
     forth.add_word('', 'SYM', symbol_word);
-    forth.add_word('SYMBOL', 'NAME', symbol_name_word);
 
     // forth.add_word('', 'SVAR', var_word);
     // forth.add_word('', 'SVAR@', var_fetch_word);
@@ -1319,6 +1411,13 @@ const CoreVocabulary = (forth, options = {}) => {
 
     forth.add_word('', 'TO-STRING', to_string_word);
     forth.add_word('', 'TO-INT', to_int_word);
+    forth.add_word('', 'TO-NUMBER', to_number_word);
+    forth.add_word('', 'TO-DATE', to_date_word);
+
+    forth.add_word('', 'W[', word_list_word);
+    forth.add_word('', 'RUN', run_word);
+    forth.add_word('', 'DEFER', defer_word);
+
 
 }
 

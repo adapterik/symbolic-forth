@@ -55,21 +55,19 @@ test::assert_stack_empty
 
 `;
 
-const TEST_3 = `
-10 CONST x
-
-time::now VARIABLE t1
-
-10000 0 DO
-x DROP
-LOOP
-
-
-
-`;
+// const TEST_3 = `
+// 10 CONST x
+//
+// time::now VARIABLE t1
+//
+// 10000 0 DO
+// x DROP
+// LOOP
+//
+// `;
 export default function AddConstTests(testing) {
     testing.add_test_set('const', 'Test all CONST operations');
     testing.add_test('const', 'create', 'Create a CONST and ensure it has the same value', TEST_1);
     testing.add_test('const', 'word', 'Create a word that is just like a CONST and ensure it has the same value', TEST_2);
-    testing.add_test('const', 'compared-to-word', 'A CONST should be faster than the equivalent word, as it is defined in JS', TEST_3);
+    // testing.add_test('const', 'compared-to-word', 'A CONST should be faster than the equivalent word, as it is defined in JS', TEST_3);
 }

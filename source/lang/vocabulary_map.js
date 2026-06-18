@@ -1,5 +1,5 @@
 function getMapKeyFromValue(forth, forthValue) {
-    const {type, value} = forthValue;
+    const [type, value] = forthValue;
     let key;
     switch (type) {
         case 'symbol':
@@ -19,7 +19,7 @@ function getMapKeyFromValue(forth, forthValue) {
 function getMapAndKeyFromStack(forth) {
     const mapValue = forth.pop_map();
 
-    const {type, value} = forth.parameter_stack.pop();
+    const [type, value] = forth.pop_any();
 
     let key;
     switch (type) {
@@ -70,7 +70,7 @@ function map_brace_word({interpreter, forth}) {
         }
 
         const elements_count = forth.parameter_stack.size_to_bookmark();
-        const items = forth.parameter_stack.popn(elements_count);
+        const items = forth.pop_n(elements_count);
 
         // Map items are alternating key value key value etc.
 
@@ -115,7 +115,7 @@ function map_get_word({forth}) {
 function map_set_word({forth}) {
     return () => {
         const [mapValue, key] = getMapAndKeyFromStack(forth);
-        const value = forth.parameter_stack.pop();
+        const value = forth.pop_any();
         mapValue[key] = value;
     }
 }
@@ -123,7 +123,7 @@ function map_set_word({forth}) {
 function map_size_word({forth}) {
     return () => {
         const mapValue = forth.pop_map();
-        const size = mapValue.size();
+        const size = Object.keys(mapValue).length;
         forth.parameter_stack.push(forth.number_value(size));
     }
 }
@@ -145,6 +145,7 @@ const MapVocabulary = (forth, options = {}) => {
     forth.add_word('', 'M!', map_set_word);
 
     // forth.add_word('map', 'create', map_word);
+    forth.add_vocabulary('MAP', 'Work with maps');
     forth.add_word('MAP', '!', map_set_word);
     forth.add_word('MAP', 'SET', map_set_word);
     forth.add_word('MAP', '@', map_get_word);

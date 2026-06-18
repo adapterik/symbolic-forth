@@ -1,4 +1,4 @@
-@import "common.css";
+@import "../common.css";
 
 #content {
 flex: 1 1 0;
@@ -16,7 +16,9 @@ padding: 1rem;
     padding: 0.25rem;
 }
 
-
+.manual-page p {
+    max-width: 50rem;
+}
 
 .manual-page code.example {
     display: block;
@@ -83,9 +85,9 @@ padding: 1rem;
 
 }
 
-.manual-page p, .manual-page dl {
+/*.manual-page p, .manual-page dl {
     max-width: 50rem;
-}
+}*/
 
 .forth-word {
     font-family: monospace;

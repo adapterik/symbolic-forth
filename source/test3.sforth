@@ -1,0 +1,26 @@
+" ------------------------" PRINTLN
+" Welcome to Symbolc FORTH" PRINTLN
+" ------------------------" PRINTLN
+
+: foo
+    " hi, from foo" println
+;
+
+foo
+
+W[ " hi from anonymous" println ] RUN
+
+
+" did that work?" println
+
+" yes, it looks like it did!" println
+
+: bar
+
+W[ " at the end!" println ] defer
+
+" and this should come first" println
+
+;
+
+bar

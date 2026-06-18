@@ -45,12 +45,12 @@
 
   DUP CHAR::EOF = IF
     DROP
-    ~EOF
+   SYM EOF
   ELSE
     CHAR::EOL = IF
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
   SWAP
@@ -69,12 +69,12 @@
   DUP CHAR::EOF = IF
     ( end of file )
     DROP ( the matching char code )
-    ~EOF
+   SYM EOF
   ELSE
     CHAR::EOL = IF
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
   SWAP
@@ -82,9 +82,9 @@
 
 : convert-field ( field-value/string type/symbol -- value/any )
  COND
-   ~string EQ OF ( do nothing, just keep string ) END
-   ~number EQ OF STRING::TO-NUM END
-   ~date EQ OF " -" SWAP STRING::SPLIT END
+  SYM string EQ OF ( do nothing, just keep string ) END
+  SYM number EQ OF STRING::TO-NUM END
+  SYM date EQ OF " -" SWAP STRING::SPLIT END
  END
 ;
 
@@ -138,7 +138,7 @@
             ( this can happen with an empty - not even a space - field )
             ( we create an empty string field )
             DROP \ get rid of the character
-            ~OK " "
+           SYM OK " "
           END
         CHAR::EOL =
           OF DROP CONTINUE END
@@ -166,8 +166,8 @@
 
       \ handle line state, which is still on the stack
       COND
-        ~EOF EQ OF BREAK END
-        ~EOL EQ OF BREAK END
+       SYM EOF EQ OF BREAK END
+       SYM EOL EQ OF BREAK END
         DROP true OF END
       END
 

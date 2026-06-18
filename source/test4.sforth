@@ -1,0 +1,39 @@
+" ------------------------" PRINTLN
+" Welcome to Symbolc FORTH" PRINTLN
+" Tinker with files       " PRINTLN
+" ------------------------" PRINTLN
+
+: main
+  FILE::RDONLY " IDEAS.md" FILE::OPEN L:> fd
+  W[ L@ fd FILE::CLOSE ] DEFER
+
+  null L:> byte
+  BEGIN
+    L@ fd FILE::READ-BYTE L-> byte
+    L@ byte IS-NULL IF BREAK THEN
+    L@ byte STRING::CODE-CHAR PRINT
+  REPEAT
+;
+
+: main2
+  " IDEAS.md" FILE::OPEN-FOR-READING
+\    FILE::RDONLY " IDEAS.md" FILE::OPEN
+
+  BEGIN
+    DUP FILE::READ-BYTE
+    DUP IS-NULL IF DROP BREAK THEN
+    STRING::CODE-CHAR PRINT
+  REPEAT
+
+  FILE::CLOSE
+;
+
+: main3
+    " temp.txt" FILE::OPEN-FOR-READING
+    A[ STR |"| STRING::CHAR-CODE ] SWAP FILE::READ-UNTIL-CODE
+    " matching char? " print PRINTLN
+    " found string? " print PRINTLN
+;
+
+main3
+.S

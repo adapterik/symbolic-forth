@@ -27,7 +27,7 @@ function create_word({forth}) {
  **/
 function push_word({forth}) {
     return () => {
-        const value = forth.parameter_stack.pop();
+        const value = forth.pop_any();
         const {id, name} = forth.pop_symbol();
         const stack = stacks[name];
         stack.push(value);

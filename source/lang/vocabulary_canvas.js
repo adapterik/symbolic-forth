@@ -110,13 +110,9 @@ function fill_text_word ({forth}) {
     }
 }
 
-let run_count = 0;
-
 const CanvasVocabulary = (forth, options = {}) => {
-    // if (run_count > 0 && !options.fresh) {
-    //     return;
-    // }
-    run_count += 1;
+    forth.add_vocabulary('CANVAS', 'Use the browser canvs');
+
     forth.add_word('canvas', "context", context_word);
     // forth.add_word('canvas', "set-context", set_context_word);
     forth.add_word('canvas', "fill_style", fill_style_word);

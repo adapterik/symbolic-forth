@@ -54,6 +54,7 @@ function text_word({forth}) {
     }
 }
 const DOMVocabulary = (forth) => {
+    forth.add_vocabulary('DOM', 'Words to work with the browser Document Object Model (DOM) API');
     forth.add_word('dom', "select", select_word);
     // forth.add_word('dom', "queryn", query_elements_word);
     forth.add_word('dom', "style", style_word);

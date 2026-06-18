@@ -38,12 +38,12 @@
 
   DUP CHAR::EOF = IF
     DROP
-    ~EOF
+   SYM EOF
   ELSE
     CHAR::EOL = IF
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
   SWAP
@@ -62,12 +62,12 @@
   DUP CHAR::EOF = IF
     ( end of file )
     DROP ( the matching char code )
-    ~EOF
+   SYM EOF
   ELSE
     CHAR::EOL = IF
-      ~EOL
+     SYM EOL
     ELSE
-      ~OK
+     SYM OK
     THEN
   THEN
   SWAP
@@ -75,9 +75,9 @@
 
 : convert-field ( field-value/string type/symbol -- value/any )
  COND
-   ~string EQ OF ( do nothing, just keep string ) END
-   ~number EQ OF STRING::TO-NUM END
-   ~date EQ OF " -" SWAP STRING::SPLIT END
+  SYM string EQ OF ( do nothing, just keep string ) END
+  SYM number EQ OF STRING::TO-NUM END
+  SYM date EQ OF " -" SWAP STRING::SPLIT END
  END
 ;
 
@@ -112,7 +112,7 @@
             ( this can happen with an empty - not even a space - field )
             ( we create an empty string field )
             DROP \ get rid of the character
-            ~OK " "
+           SYM OK " "
           END
         CHAR::EOL =
           OF DROP CONTINUE END
@@ -141,8 +141,8 @@
 
       \ handle line state, which is still on the stack
       COND
-        ~EOF EQ OF BREAK END
-        ~EOL EQ OF BREAK END
+       SYM EOF EQ OF BREAK END
+       SYM EOL EQ OF BREAK END
         DROP true OF END
       END
 
@@ -190,7 +190,7 @@
   3 SWAP A@
 ;
 
-M{ ~coverage-type ~coverage-type-key ~provider ~provider-key ~date ~year-month-key } VARIABLE label-creators
+M{SYM coverage-typeSYM coverage-type-keySYM providerSYM provider-keySYM dateSYM year-month-key } VARIABLE label-creators
 
 : main
 
@@ -204,7 +204,7 @@ M{ ~coverage-type ~coverage-type-key ~provider ~provider-key ~date ~year-month-k
 
   LOCAL@ input-file FILE::OPEN LOCAL file-handle
 
-  A[ ~string ~date ~string ~string ~string ~date ~string ~number ~number ~number ~number ~number ~number ~number ~number ~number  ~string ] LOCAL row-types
+  A[SYM stringSYM dateSYM stringSYM stringSYM stringSYM dateSYM stringSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM numberSYM number SYM string ] LOCAL row-types
 
   ( read the header row )
   false LOCAL@ file-handle read-row LOCAL header

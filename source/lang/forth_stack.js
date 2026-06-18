@@ -135,7 +135,7 @@ export default class ForthStack {
     dump() {
         console.log('STACK DUMP BEGIN');
         console.log('Size', this.size());
-        this.forEach(({type, value}, i) => {
+        this.forEach(([type, value], i) => {
             console.log(i, 'type: ', type, 'value: ', value);
         });
         console.log('STACK DUMP END');

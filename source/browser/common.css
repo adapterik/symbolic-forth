@@ -1,4 +1,4 @@
-body {
+body, body.sforth {
     padding: 0;
     margin: 0;
     width: 100%;
@@ -157,4 +157,8 @@ flex: 0 0 auto;
     font-family: monospace;
     white-space: pre;
     overflow-y: scroll;
+}
+
+.content {
+    max-width: 50rem;
 }

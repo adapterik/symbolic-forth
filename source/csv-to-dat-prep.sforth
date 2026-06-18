@@ -1,9 +1,14 @@
 ( ---------------------------------- )
-( Converts a valid CSV file to a DAT file and accompanying
-  It also introduces changes we have wanted - to automatically build
-  a map from column name to column index.
-  It will suss out the type of a column - string, number, date - but we can
-  also provide types and other metadata. This metadata file is created upon first successful import and export, and can be manually tweaked afterwards.
+(
+  Prepares a header for CSV to DAT conversion.
+
+  The idea is we want our DAT file to be well-formed. In the first pass we need
+  to grok the types of the columns, building up the type as we loop through the
+  rows. If a column contains inconsistent data, we print out the offending line
+  and column.
+  We will provide a facility for providing a short snippet of FORTH to fix up offending values column-by-column.
+  Or maybe we just give up and require the user to provide a set of column
+  types at the outset.
 )
 ( ---------------------------------- )
 
@@ -17,6 +22,7 @@
 
 ( Constants )
 
+" CHAR" " Characters" VOCABULARY
 32 CONST char::space
 34 CONST char::double-quote
 44 CONST char::comma
@@ -150,11 +156,11 @@
             L@ file-handle read-raw-field
             \ we have to fuss with the stack to get things in the right
             \ order
-            2 NPICK STRING::CONCAT
+            2 NPICK SWAP STRING::CONCAT
           END
       END
 
-      L+! colno
+      L+> colno
       \ note that if the types parameter is falsey, we don't attempt to convert
       \ the field and just leave it as a string.
       L@ types IF
@@ -176,206 +182,103 @@
     L@ row
 ;
 
-: convert-row ( row/array types/array -- converted-row/array )
-    LOCAL types
-    LOCAL row
-    0 LOCAL colno
-    0 ARRAY::NARRAY LOCAL converted-row
-    L@ row ARRAY::LENGTH LOCAL count
-    BEGIN
-      LOCAL@ colno LOCAL@ count = IF BREAK THEN
-
-      { LOCAL@ colno LOCAL@ row ARRAY::GET } \ array value
-      { LOCAL@ colno LOCAL@ types ARRAY::GET } \ type for the column
-      convert-field
-
-      LOCAL@ converted-row ARRAY::APPEND
-
-      LOCAL@ colno 1 + LOCAL! colno
-      \ PROG[ 1 + ] LOCAL-APPLY colno
-      \ PROG[ " true" ] PROG[ " false" ] true IFELSE
-    REPEAT
-
-    LOCAL@ converted-row
-;
-
-: year-month-key
-  LOCAL row
-  1 LOCAL@ row A@ LOCAL date
-
-  \ make the binning
-  # { 0 LOCAL@ date A@ } " -" { 1 LOCAL@ date A@ } STRING::JOIN
-;
-
-: provider-key
-  2 SWAP A@
-;
-
-: coverage-type-key
-  3 SWAP A@
-;
-
-: guess-types
-;
-
 : row-to-dat ( csv-row/array -- dat-row/array )
   L:> row
 
   0 ARRAY::NARRAY L:> dat
 
-  L@ row ARRAY::LENGTH 0 DO
+  L@ row ARRAY::LENGTH 0 DOI
     \ remember, the index element is on top of stack :)
-    L@ row A@ DUP STRING::LENGTH L@ dat ARRAY::APPEND
-    L@ dat ARRAY::APPEND
+    \ or is it a local named "I"?
+    L@ I L@@ row A@ DUP STRING::LENGTH TO-STRING L@@ dat ARRAY::APPEND
+    L@@ dat ARRAY::APPEND
   LOOP
 
-  L@ dat
+  L@ dat "  " STRING::INTERPOLATE-ARRAY "  " STRING::CONCAT
 ;
 
-: print-datx ( dat-row/array -- )
-  DUP L:> dat-row
-  ARRAY::LENGTH L:> len
-  " Length? " PRINT L@ len PRINTLN
-  0 L:> pos
+\  : print-dat ( dat-row/array -- )
+\    DUP L:> row
+\    ARRAY::LENGTH 0 DOI
+\      L@ row A@ TO-STRING PRINT
+\      "  " PRINT
+\    LOOP
+\  ;
 
-  BEGIN
-    L@ len L@ pos = IF BREAK THEN
-
-    L@ pos L@ dat-row A@ TO-STRING PRINT
-    "  " PRINT
-
-    L+! pos
-  REPEAT
-;
-
-: print-dat ( dat-row/array -- )
-  DUP L:> row
-  ARRAY::LENGTH 0 DO
-    L@ row A@ TO-STRING PRINT
-    "  " PRINT
-  LOOP
-;
-
-" HERE?" println
-
-: dat-to-string ( dat-row/array -- )
-  DUP L:> row
-  0 ARRAY::NARRAY L:> result
-  ARRAY::LENGTH 0 DO
-    L@ row A@ TO-STRING L@ result ARRAY::APPEND
-  LOOP
-  L@ result " " STRING::JOIN-ARRAY
-;
-
+\  : dat-to-string ( dat-row/array -- )
+\    DUP L:> row
+\    0 ARRAY::NARRAY L:> result
+\    ARRAY::LENGTH 0 DO
+\      L@ row A@ TO-STRING L@ result ARRAY::APPEND
+\    LOOP
+\    L@ result " " STRING::JOIN-ARRAY
+\  ;
 
 : main
   L:> input-file-name
 
-
-  FILE::RDONLY L@ input-file-name FILE::OPEN L:> file-handle
+  FILE::RDONLY L@ input-file-name FILE::OPEN L:> input-fd
+  W[ L@ input-fd FILE::CLOSE ] DEFER
 
   \ we need one file to write the header
   # L@ input-file-name " .header.dat" STRING::JOIN L:> header-file-name
 
-  FILE::APPEND FILE::TRUNC & L@ header-file-name FILE::OPEN L:> header-fd
+  " Outputting header to: " print L<- header-file-name println
 
-  false L:> row-types
+  FILE::WRONLY FILE::TRUNC | FILE::CREAT | L@ header-file-name FILE::OPEN L:> header-fd
 
-  ( read the header row )
-  false L@ file-handle read-row row-to-dat L:> header
-  L@ header dat-to-string PRINTLN
+  W[ L@ header-fd FILE::CLOSE ] DEFER
 
-  L@ header-fd FILE::CLOSE
+  false L@ input-fd read-row L:> header-row
 
-  exit
+  L@ header-row ARRAY::LENGTH L:> column-count
 
-  \ And another file to write the data.
+  0 ARRAY::NARRAY L-> row-types
 
-
-  \ disable for now
-\    L@ header row-to-dat
-\    print-dat
-
-\    "  " STRING::INTERPOLATE-ARRAY PRINTLN
 
   0 L:> line-count
   null L:> row
 
-  BEGIN
-\      L@ line-count PRINTLN
-    L@ row-types L@ file-handle read-row
+  # L@ input-file-name " .data.dat" STRING::JOIN L:> data-file-name
 
+  FILE::WRONLY FILE::TRUNC | FILE::CREAT | FILE::APPEND | L@ data-file-name FILE::OPEN L:> data-fd
+  W[ L@ data-fd FILE::CLOSE ] DEFER
+
+  BEGIN
+    L@ row-types L@ input-fd read-row
+  " A" println
+
+    L@ line-count 0 = IF
+      \ TODO: infer the type.
+      \ FORNOW: just use string
+
+      " string" L@ row-types ARRAY::APPEND
+    THEN
 
     DUP ARRAY::LENGTH 0 = IF
-      " Rows: " PRINT L@ line-count PRINTLN
+      " Rows: " PRINT L@@ line-count PRINTLN
       BREAK
     THEN
 
-    row-to-dat
+    row-to-dat L@ data-fd FILE::WRITE-STRING
 
-    print-dat
+    L+> line-count
+" HERE: "  print L@ line-count println
 
-\      DROP
-
-    \ we can also process the rows in a separate pass for debugging.
-    \ LOCAL@ row-types convert-row DUP LOCAL row
-
-    ( process line! )
-
-    ( swap in your favorite label-creating word )
-\      { LOCAL@ label-creator label-creators @ MAP::GET } LOCAL label-word
-\      { LOCAL@ row LOCAL@ label-word EXEC } LOCAL label
-
-    \ get the value to sum
-\      11 LOCAL@ row A@ LOCAL value
-
-    \ get the bin, if it exists.
-\      LOCAL@ label LOCAL@ summary M@
-
-\      DUP NULLP IF
-\        { LOCAL@ value LOCAL@ label LOCAL@ summary } MAP::SET
-\        DROP
-\      ELSE
-\        { LOCAL@ value + LOCAL@ label LOCAL@ summary } MAP::SET
-\      THEN
-
-    L+! line-count
+    L@ line-count 100 = IF BREAK THEN
+    " here?" println
 
   REPEAT
 
+  L@ column-count TO-STRING  L@ header-row ARRAY::PREPEND
+  L@ column-count 0 DO
+     " string" L@ header-row ARRAY::APPEND
+  LOOP
 
-  L@ file-handle file::close
+  L@ header-row row-to-dat L@ header-fd FILE::WRITE-STRING
 
   " " PRINTLN
-(
-  0 LOCAL max-key-width
-  # LOCAL@ summary MAP::KEYS
-  BEGIN
-    DUP #= IF BREAK THEN
-    SYMBOL::NAME STRING::LENGTH LOCAL@ max-key-width MAX LOCAL! max-key-width
-  REPEAT
 
-
-  # " %-" LOCAL@ max-key-width to-string  " s:%10.2f" STRING::JOIN LOCAL format
-
-  # LOCAL@ summary MAP::KEYS
-  BEGIN
-    DUP #= IF BREAK THEN
-    # SWAP
-    DUP LOCAL@ summary MAP::GET
-    \  now we have the value and key on the top of the stack.
-    SWAP
-    LOCAL@ format PRINTF
-    " " PRINTLN
-  REPEAT)
 ;
 
-(
-" CSV To DAT" PRINTLN
-" ^^^^^^^^^^" PRINTLN)
-
 main
-
-\  " " PRINTLN
-\  " Done!" PRINTLN
-
