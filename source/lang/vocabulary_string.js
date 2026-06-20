@@ -152,6 +152,47 @@ function string_join_word({forth}) {
     }
 }
 
+function string_join_wordlist_word({forth, interpreter}) {
+    const [, word_list] = interpreter.compile_until([']']);
+    return () => {
+
+        forth.parameter_stack.set_bookmark();
+
+        interpreter.run_word_list(word_list, {breakOn: 'exit'});
+
+        switch(forth.controlFlowState) {
+            case null:
+                break;
+            case 'break':
+                console.warn('break detected in map brace word; ignored, reset');
+                forth.resetControlFlowState();
+                break;
+            case 'continue':
+                console.warn('continue detected in map brace word; ignored, reset');
+                forth.resetControlFlowState();
+                break;
+            case 'return':
+                console.warn('return detected in map brace word; ignored, reset');
+                forth.resetControlFlowState();
+                break;
+            case 'exit':
+                return;
+                break;
+        }
+
+        const array_size = forth.parameter_stack.size_to_bookmark();
+
+        const values = forth.parameter_stack.popn(array_size);
+
+        let result = '';
+        for (let value of values) {
+            const string = forth.to_string(value);
+            result += string;
+        }
+        forth.parameter_stack.push(forth.string_value(result))
+    }
+}
+
 function string_join_array_word({forth}) {
     return () => {
         const values = forth.pop_array();
@@ -231,6 +272,7 @@ function string_replace_word({forth}) {
 
 const StringVocabulary = (forth, options = {}) => {
     forth.add_word('', 'S=', string_equal_word);
+    forth.add_word('', 'S[', string_join_wordlist_word);
 
     forth.add_vocabulary('STRING', 'Extended string capabilities');
     forth.add_word('string', '=', string_equal_word);

@@ -288,6 +288,30 @@ function file_open_for_reading_word({forth}) {
         forth.parameter_stack.push(forth.number_value(file.fd));
     }
 }
+
+
+function file_open_write_new_word({forth}) {
+    return () => {
+        const path = forth.pop_string();
+        const flags = os.O_WRONLY | os.O_TRUNC | os.CREAT;
+
+        const file = new BufferedFile({path, flags});
+
+        file.open();
+
+        if (file.isError()) {
+            throw new Error(`cannot open file ${path} with perms ${stringPerms}`);
+        }
+
+        OPEN_FILES.add(file);
+
+        forth.parameter_stack.push(forth.number_value(file.fd));
+    }
+}
+
+
+
+
 /**
  * Closes the file given by the file handle
  * If the file was successfully closed, true is put on the stack,
@@ -566,6 +590,7 @@ const FileVocabulary = (forth, options = {}) => {
     forth.add_word('file', "load", file_load_word);
     forth.add_word('file', "open", file_open_word);
     forth.add_word('file', "open-for-reading", file_open_for_reading_word);
+    forth.add_word('file', "open/write-new", file_open_write_new_word);
     forth.add_word('file', "close", file_close_word);
     // forth.add_word('file', "read", file_read_word);
     forth.add_word('file', "get-word", file_get_word_word);
